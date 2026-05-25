@@ -57,8 +57,8 @@ OK (4 tests, 4 assertions)
 
 ```
 tests/
-├── bootstrap.php            ← se carga antes de todos los tests
-└── CifradoServiceTest.php   ← tests de CifradoService
+├── bootstrap.php            <- se carga antes de todos los tests
+└── CifradoServiceTest.php   <- tests de CifradoService
 ```
 
 `bootstrap.php` define las constantes y carga las clases que los tests necesitan. No se toca salvo que se agregue una clase nueva al proyecto.
