@@ -1,8 +1,7 @@
 <?php
-
 class App
 {
-    public function run(string $url)
+    public function run(string $url): void
     {
         $segments = explode('/', trim($url, '/'));
 
@@ -12,24 +11,25 @@ class App
 
         $controllerClass = ucfirst($controllerName) . 'Controller';
 
-        if (!class_exists($controllerClass)){
-            return $this->error404();
+        if (!class_exists($controllerClass)) {
+            $this->error404();
+            return;
         }
 
         $controller = new $controllerClass();
 
-        if (!is_callable([$controller, $method])){
-            return $this->error404();
-        } 
+        if (!is_callable([$controller, $method])) {
+            $this->error404();
+            return;
+        }
 
         call_user_func_array([$controller, $method], $params);
-        var_dump($url); die;
     }
 
-    private function error404()
+    private function error404(): void
     {
         http_response_code(404);
-        require BASE_PATH . '/views/404.php';
+        require BASE_PATH . '/views/404.PHP';
         exit;
     }
 }

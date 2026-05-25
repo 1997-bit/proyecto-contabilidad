@@ -19,6 +19,7 @@ spl_autoload_register(function ($class) {
         BASE_PATH . '/services/',
         BASE_PATH . '/middleware/',
         BASE_PATH . '/core/',
+        BASE_PATH . '/helpers/',
     ];
 
     foreach ($paths as $path) {
@@ -32,8 +33,9 @@ spl_autoload_register(function ($class) {
 
 $url = $_GET['url'] ?? '';
 $url = trim($url, '/');
+require_once BASE_PATH . '/config/Config.php';
+Config::cargarEnv(BASE_PATH . '/.env');
+define('BASE_URL', '');
 
 $app = new App();
 $app->run($url);
-
-var_dump($_GET['url'] ?? 'NO URL'); die;

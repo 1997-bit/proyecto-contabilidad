@@ -1,20 +1,13 @@
 RewriteEngine On
 
-RewriteBase /proyecto-contabilidad/public/
-
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.+)$ index.php?url=$1 [QSA,L]
 
 RewriteRule ^$ index.php?url=home [L,QSA]
 
-# Bloquea el acceso a los .md
 <FilesMatch "\.(md)">
-Require all denied
+    Require all denied
 </FilesMatch>
-
-# Oculta Extension .php
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
 Options -Indexes
