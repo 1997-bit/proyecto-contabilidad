@@ -1,5 +1,15 @@
 {
-    "require-dev": {
-        "phpunit/phpunit": "^13.1"
-    }
+	"require-dev": {
+		"phpunit/phpunit": "^13.1"
+	},
+	"autoload": {
+		"classmap": [
+			"config",
+			"core",
+			"models",
+			"services",
+			"controllers",
+			"helpers"
+		]
+	}
 }

@@ -43,7 +43,7 @@ CREATE TABLE colaboradores (
   created_at       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-  CONSTRAINT chk_anio_inicio   CHECK (anio_inicio >= 2000 AND anio_inicio <= YEAR(CURDATE()),
+  CONSTRAINT chk_anio_inicio CHECK (anio_inicio BETWEEN 2000 AND 2100),
 
   PRIMARY KEY (id),
   UNIQUE KEY uq_cedula_hash  (cedula_hash),

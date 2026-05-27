@@ -1,3 +1,5 @@
+<?php
+
 class Conexion
 {
     private static ?PDO $instance = null;
