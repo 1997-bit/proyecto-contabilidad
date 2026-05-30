@@ -34,4 +34,3 @@ kanban
 | EP-2: Empleados | #3, #4                 |
 | EP-3: Planilla  | #5, #6, #7, #8         |
 | EP-4: Reportes  | #9, #10, #11, #12, #13 |
-| EP-5: QA        | #14                    |
