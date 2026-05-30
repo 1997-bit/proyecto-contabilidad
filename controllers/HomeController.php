@@ -4,6 +4,7 @@ class HomeController
 {
     public function index()
     {
-        require BASE_PATH . '/views/home.php';
+    SessionHelper::requerir(); // redirige a /login si no hay sesión
+    require BASE_PATH . '/views/home.php';
     }
 }
