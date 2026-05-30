@@ -6,7 +6,7 @@ RewriteRule ^(.+)$ index.php?url=$1 [QSA,L]
 
 RewriteRule ^$ index.php?url=home [L,QSA]
 
-<FilesMatch "\.(md)">
+<FilesMatch "\.(md|env|sql|log|json|lock)$">
     Require all denied
 </FilesMatch>
 

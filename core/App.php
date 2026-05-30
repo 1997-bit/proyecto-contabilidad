@@ -1,35 +1,66 @@
-<?php
+<?php declare(strict_types=1);
+
 class App
 {
-    public function run(string $url): void
-    {
-        $segments = explode('/', trim($url, '/'));
+  private const SESSION_TIMEOUT = 1800;
 
-        $controllerName = !empty($segments[0]) ? $segments[0] : 'home';
-        $method = isset($segments[1]) && $segments[1] !== '' ? $segments[1] : 'index';
-        $params = array_slice($segments, 2);
+  public static function run(): void
+  {
+    self::iniciarSesion();
+    self::definirRutas();
+    self::cargarNucleo();
+    (new Router())->dispatch();
+  }
 
-        $controllerClass = ucfirst($controllerName) . 'Controller';
-
-        if (!class_exists($controllerClass)) {
-            $this->error404();
-            return;
-        }
-
-        $controller = new $controllerClass();
-
-        if (!is_callable([$controller, $method])) {
-            $this->error404();
-            return;
-        }
-
-        call_user_func_array([$controller, $method], $params);
+  private static function iniciarSesion(): void
+  {
+    if (session_status() === PHP_SESSION_NONE) {
+      session_start();
     }
 
-    private function error404(): void
-    {
-        http_response_code(404);
-        require BASE_PATH . '/views/404.PHP';
+    if (isset($_SESSION['LAST_ACTIVITY'])) {
+      if (time() - $_SESSION['LAST_ACTIVITY'] > self::SESSION_TIMEOUT) {
+        session_unset();
+        session_destroy();
+        header('Location: /login?error=sesion');
         exit;
+      }
     }
+
+    $_SESSION['LAST_ACTIVITY'] = time();
+  }
+
+  private static function definirRutas(): void
+  {
+    define('BASE_PATH', realpath(__DIR__ . '/..'));
+    define('BASE_URL',  '');
+  }
+
+  private static function cargarNucleo(): void
+  {
+    spl_autoload_register(function (string $class): void {
+      $directorios = [
+        BASE_PATH . '/controllers/',
+        BASE_PATH . '/models/',
+        BASE_PATH . '/services/',
+        BASE_PATH . '/middleware/',
+        BASE_PATH . '/core/',
+        BASE_PATH . '/helpers/',
+      ];
+
+      foreach ($directorios as $dir) {
+        $archivo = $dir . $class . '.php';
+        if (file_exists($archivo)) {
+          require_once $archivo;
+          return;
+        }
+      }
+    });
+
+    require_once BASE_PATH . '/config/Config.php';
+    Config::cargarEnv(BASE_PATH . '/.env');
+
+    require_once BASE_PATH . '/config/Conexion.php';
+    require_once BASE_PATH . '/core/Router.php';
+  }
 }
