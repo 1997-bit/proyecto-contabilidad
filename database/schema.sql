@@ -28,8 +28,6 @@ CREATE TABLE usuarios (
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Usuarios con acceso al sistema';
 
-
-
 CREATE TABLE colaboradores (
   id               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
   nombre_completo  VARBINARY(255)   NOT NULL COMMENT 'AES-256-GCM cifrado',
@@ -45,7 +43,7 @@ CREATE TABLE colaboradores (
   created_at       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-  CONSTRAINT chk_anio_inicio   CHECK (anio_inicio >= 2000 AND anio_inicio <= 2026),
+  CONSTRAINT chk_anio_inicio CHECK (anio_inicio BETWEEN 2000 AND 2100),
 
   PRIMARY KEY (id),
   UNIQUE KEY uq_cedula_hash  (cedula_hash),
@@ -57,8 +55,6 @@ CREATE TABLE colaboradores (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Datos personales y laborales de cada colaborador';
-
-
 
 CREATE TABLE planillas (
   id               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -89,8 +85,6 @@ CREATE TABLE planillas (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Encabezado de cada periodo — ciclo: borrador > aprobada > pagada | anulada';
-
-
 
 CREATE TABLE detalle_planilla (
   id                    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
@@ -137,9 +131,6 @@ CREATE TABLE detalle_planilla (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Linea de planilla por colaborador — campos calculados desnormalizados para auditoria historica';
-
-
-
 
 CREATE TABLE audit_log (
   id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

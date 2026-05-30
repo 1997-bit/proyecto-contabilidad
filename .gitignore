@@ -1,3 +1,6 @@
 .env
+.env.testing
 !.env.example
 *.7z
+vendor/
+.phpunit.result.cache
