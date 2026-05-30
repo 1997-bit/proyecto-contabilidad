@@ -1,7 +1,7 @@
 <?php
 use PHPUnit\Framework\TestCase;
 
-class CifradoServiceTest extends TestCase
+wclass CifradoServiceTest extends TestCase
 {
     private CifradoService $c;
 
