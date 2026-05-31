@@ -9,10 +9,10 @@ class ColaboradorModel
         $stmt = $this->db->prepare("
             INSERT INTO colaboradores
                 (empresa_id, nombre_completo, nombre_hash, cedula, cedula_hash,
-                 estado_civil, cargo, salario_base, tipo_salario, grupo, anio_inicio)
+                estado_civil, cargo, salario_base, anio_inicio)
             VALUES
                 (:empresa_id, :nombre_completo, :nombre_hash, :cedula, :cedula_hash,
-                 :estado_civil, :cargo, :salario_base, :tipo_salario, :grupo, :anio_inicio)
+                :estado_civil, :cargo, :salario_base, :anio_inicio)
         ");
         $stmt->execute($d);
     }

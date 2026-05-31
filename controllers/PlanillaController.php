@@ -3,10 +3,18 @@
 class PlanillaController
 {
     private PlanillaService $planillaService;
+    private PlanillaModel $planillaModel;
+    private CifradoService $cifrado;
 
     public function __construct()
     {
+        require_once BASE_PATH . '/config/Config.php';
+        Config::cargarEnv(BASE_PATH . '/.env');
+
+        $db = Conexion::conectar();
         $this->planillaService = new PlanillaService(new ISRService());
+        $this->planillaModel   = new PlanillaModel($db);
+        $this->cifrado         = new CifradoService();
     }
 
     /**
@@ -18,80 +26,129 @@ class PlanillaController
     public function index(): void
     {
         SessionHelper::iniciar();
-        $filas   = $_SESSION['planilla_prueba'] ?? [];
+
+        $filas = $_SESSION['planilla_prueba'] ?? [];
         $totales = $this->calcularTotales($filas);
         $errores = $_SESSION['planilla_errores'] ?? [];
-        unset($_SESSION['planilla_errores']);
+        $exito = $_SESSION['planilla_exito'] ?? '';
+        unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
+
+        $empresas = $this->planillaModel->listarEmpresas();
+        $csrf = SessionHelper::generarCsrf();
 
         require BASE_PATH . '/views/planilla/index.php';
     }
 
-    public function agregar(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/planilla');
-            exit;
-        }
-
-        SessionHelper::iniciar();
-
-        $nombre = trim($_POST['nombre'] ?? '');
-        $cargo = trim($_POST['cargo'] ?? '');
-        $salario = (float) ($_POST['salario'] ?? 0);
-        $estadoCivil = $_POST['estado_civil'] ?? 'soltero';
-        $otrosDesc = (float) ($_POST['otros_descuentos'] ?? 0);
-
-        // Construir array de ingresos variables
-        $ingresos = [];
-        foreach ($_POST['ing_tipo'] ?? [] as $i => $tipo) {
-            if (empty($tipo)) continue;
-            $entry = [
-                'tipo'  => $tipo,
-                'monto' => (float) ($_POST['ing_monto'][$i] ?? 0),
-            ];
-            if ($tipo === 'horas_extra') {
-                $entry['horas'] = (float) ($_POST['ing_horas'][$i] ?? 0);
-            }
-            $ingresos[] = $entry;
-        }
-
-        $errores = [];
-        if ($nombre === '') $errores[] = 'El nombre es requerido.';
-        if ($salario <= 0) $errores[] = 'El salario base debe ser mayor a 0.';
-        if (!in_array($estadoCivil, ['soltero', 'casado', 'unido'], true))
-            $errores[] = 'Estado civil inválido.';
-
-        if (!empty($errores)) {
-            $_SESSION['planilla_errores'] = $errores;
-            header('Location: ' . BASE_URL . '/planilla');
-            exit;
-        }
-
-        $colaborador = [
-            'salario_base' => $salario,
-            'estado_civil' => $estadoCivil,
-            'horas_semanales' => 48,
-            'semanas_mes' => 4.3333,
-        ];
-        $extras = [
-            'ingresos' => $ingresos,
-            'otros_descuentos' => $otrosDesc,
-        ];
-
-        $calc = $this->planillaService->calcularQuincena($colaborador, $extras);
-
-        $_SESSION['planilla_prueba'][] = [
-            'nombre' => $nombre,
-            'cargo' => $cargo,
-            'estado_civil'=> $estadoCivil,
-            'salario' => $salario,
-            'calc' => $calc,
-        ];
-
-        header('Location: ' . BASE_URL . '/planilla');
-        exit;
+public function agregar(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . BASE_URL . '/planilla'); exit;
     }
 
+    SessionHelper::iniciar();
+
+    $nombre = trim($_POST['nombre'] ?? '');
+    $cedula = trim($_POST['cedula'] ?? '');
+    $cargo = trim($_POST['cargo'] ?? '');
+    $salario = (float) ($_POST['salario'] ?? 0);
+    $estadoCivil = $_POST['estado_civil'] ?? 'soltero';
+    $otrosDesc = (float) ($_POST['otros_descuentos']?? 0);
+    $anioInicio = (int)   ($_POST['anio_inicio'] ?? date('Y'));
+    $empresaId = (int)   ($_POST['empresa_id'] ?? 0);
+    $periodo = $_POST['periodo'] ?? '1ra_quincena';
+    $mes = (int)   ($_POST['mes'] ?? (int) date('n'));
+    $anio = (int)   ($_POST['anio'] ?? (int) date('Y'));
+
+    $ingresos = [];
+    foreach ($_POST['ing_tipo'] ?? [] as $i => $tipo) {
+        if (empty($tipo)) continue;
+        $entry = ['tipo' => $tipo, 'monto' => (float) ($_POST['ing_monto'][$i] ?? 0)];
+        if ($tipo === 'horas_extra') $entry['horas'] = (float) ($_POST['ing_horas'][$i] ?? 0);
+        $ingresos[] = $entry;
+    }
+
+    $errores = [];
+    if ($nombre === '') $errores[] = 'El nombre es requerido.';
+    if ($cedula === '') $errores[] = 'La cédula es requerida.';
+    if ($salario <= 0) $errores[] = 'El salario base debe ser mayor a 0.';
+    if ($empresaId <= 0) $errores[] = 'Debe seleccionar una empresa.';
+    if (!in_array($estadoCivil, ['soltero','casado','unido'], true)) $errores[] = 'Estado civil inválido.';
+    if (!in_array($periodo, ['1ra_quincena','2da_quincena'], true))  $errores[] = 'Período inválido.';
+    if ($mes < 1 || $mes > 12) $errores[] = 'Mes inválido.';
+    if ($anio < 2000 || $anio > 2100) $errores[] = 'Año inválido.';
+
+    if (!empty($errores)) {
+        $_SESSION['planilla_errores'] = $errores;
+        header('Location: ' . BASE_URL . '/planilla'); exit;
+    }
+
+    $empresa = $this->planillaModel->buscarEmpresa($empresaId);
+    if (!$empresa) {
+        $_SESSION['planilla_errores'] = ['Empresa no encontrada.'];
+        header('Location: ' . BASE_URL . '/planilla'); exit;
+    }
+
+    $calc = $this->planillaService->calcularQuincena([
+        'salario_base' => $salario,
+        'estado_civil' => $estadoCivil,
+        'horas_semanales' => (float) $empresa['horas_semanales'],
+        'semanas_mes' => (float) $empresa['semanas_mes'],
+    ], ['ingresos' => $ingresos, 'otros_descuentos' => $otrosDesc]);
+
+    $_SESSION['planilla_prueba'][] = [
+        'nombre' => $nombre, 'cedula'  => $cedula,
+        'cargo' => $cargo,  'estado_civil' => $estadoCivil,
+        'salario' => $salario,'empresa_id' => $empresaId,
+        'periodo' => $periodo,'mes' => $mes, 'anio' => $anio,
+        'anio_inicio' => $anioInicio, 'ingresos' => $ingresos, 'calc' => $calc,
+    ];
+
+    try {
+        $pdo = Conexion::conectar();
+        $pdo->beginTransaction();
+
+        $cedulaHash = CifradoService::hash($cedula);
+        $colab = $this->planillaModel->buscarColaboradorPorCedulaHash($cedulaHash);
+
+        if ($colab) {
+            $colaboradorId = (int) $colab['id'];
+        } else {
+            $colaboradorId = $this->planillaModel->insertarColaborador([
+                ':empresa_id' => $empresaId,
+                ':nombre_completo' => $this->cifrado->cifrar($nombre),
+                ':nombre_hash' => CifradoService::hash($nombre),
+                ':cedula' => $this->cifrado->cifrar($cedula),
+                ':cedula_hash' => $cedulaHash,
+                ':estado_civil' => $estadoCivil,
+                ':cargo' => $cargo,
+                ':salario_base' => $salario,
+                ':anio_inicio' => $anioInicio,
+            ]);
+        }
+
+        $planillaRow = $this->planillaModel->buscarPlanilla($empresaId, $periodo, $mes, $anio);
+        $planillaId  = $planillaRow
+            ? (int) $planillaRow['id']
+            : $this->planillaModel->crearPlanilla($empresaId, $periodo, $mes, $anio, $_SESSION['usuario_id'] ?? null);
+
+        if ($this->planillaModel->existeDetalle($planillaId, $colaboradorId)) {
+            $pdo->rollBack();
+            $_SESSION['planilla_errores'] = ["Este colaborador ya tiene detalle en {$periodo} {$mes}/{$anio}."];
+            header('Location: ' . BASE_URL . '/planilla'); exit;
+        }
+
+        $this->planillaModel->insertarDetalle($planillaId, $colaboradorId, $calc, $_SESSION['usuario_id'] ?? null);
+        $pdo->commit();
+
+        $_SESSION['planilla_exito'] = "Guardado — Planilla #{$planillaId} · Colaborador #{$colaboradorId}";
+
+    } catch (\Throwable $e) {
+        if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+        $_SESSION['planilla_errores'] = ['Error BD: ' . $e->getMessage()];
+    }
+
+    header('Location: ' . BASE_URL . '/planilla'); exit;
+}
     public function eliminar(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
