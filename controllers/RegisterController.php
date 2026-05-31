@@ -13,10 +13,10 @@ class RegisterController
 
     private function guardar(): void
     {
-        $nombre   = trim($_POST['nombre']   ?? '');
-        $email    = trim($_POST['email']    ?? '');
+        $nombre = trim($_POST['nombre']   ?? '');
+        $email = trim($_POST['email']    ?? '');
         $password = trim($_POST['password'] ?? '');
-        $rol      = trim($_POST['rol']      ?? 'visor');
+        $rol = trim($_POST['rol']      ?? 'visor');
 
         // Validación básica
         $rolesValidos = ['admin', 'contador', 'visor'];
@@ -26,7 +26,7 @@ class RegisterController
             return;
         }
 
-        $cifrado   = new CifradoService();
+        $cifrado = new CifradoService();
         $emailHash = CifradoService::hash($email);
 
         // Verificar que el email no exista ya
@@ -38,11 +38,11 @@ class RegisterController
         }
 
         $model->insertar([
-            'nombre'        => $cifrado->cifrar($nombre),
-            'email'         => $cifrado->cifrar($email),
-            'email_hash'    => $emailHash,
+            'nombre' => $cifrado->cifrar($nombre),
+            'email' => $cifrado->cifrar($email),
+            'email_hash' => $emailHash,
             'password_hash' => password_hash($password, PASSWORD_ARGON2ID),
-            'rol'           => $rol,
+            'rol' => $rol,
         ]);
 
         $exito = 'Usuario creado. <a href="' . BASE_URL . '/login">Ir al login</a>';
