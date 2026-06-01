@@ -126,11 +126,12 @@ class PlanillaService
       $excedenteCSS += $resultado['excedente_css'];
 
       $detalle[] = [
-        'tipo' => $tipo,
-        'monto' => $monto,
-        'gravable' => $this->redondear($resultado['gravable'],      2),
+        'tipo'          => $tipo,
+        'monto'         => $monto,
+        'gravable'      => $this->redondear($resultado['gravable'],      2),
         'sin_descuento' => $this->redondear($resultado['sin_descuento'], 2),
-      ];
+        'horas'         => $ingreso['horas'] ?? null,  // se guarda en BD, no afecta calculo
+      ];   
     }
 
     return [
@@ -144,8 +145,7 @@ class PlanillaService
   /** Horas extra: monto calculado desde horas * valorHora * recargo */
   private function calcularHorasExtra(array $ingreso, float $valorHora): array
   {
-    $horas = (float) ($ingreso['horas'] ?? 0);
-    $monto = $this->redondear($valorHora * Config::RECARGO_DIURNO * $horas, 2);
+    $monto = (float) ($ingreso['monto'] ?? 0);
     return ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0];
   }
 

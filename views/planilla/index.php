@@ -399,7 +399,7 @@ function planilla_fmt(float $v): string {
         <input type="number" name="ing_monto[]" step="0.01" min="0"
                placeholder="Monto B/." value="0">
         <input type="number" name="ing_horas[]" step="0.01" min="0"
-               placeholder="Horas" value="0"
+               placeholder="Horas trabajadas" value="0"
                class="campo-horas" style="display:none">
         <button type="button" onclick="eliminarFilaIng(this)">✕</button>
     `;
@@ -409,23 +409,18 @@ function planilla_fmt(float $v): string {
 				function eliminarFilaIng(btn) {
 					const rows = document.querySelectorAll(".ing-row");
 					if (rows.length > 1) btn.parentElement.remove();
-				}
+        }
 
-				function toggleHoras(sel) {
-					const row = sel.parentElement;
-					const horas = row.querySelector(".campo-horas");
-					const monto = row.querySelector(
-						'input[name="ing_monto[]"]',
-					);
-					if (sel.value === "horas_extra") {
-						horas.style.display = "inline";
-						monto.placeholder = "Monto (auto)";
-					} else {
-						horas.style.display = "none";
-						monto.placeholder = "Monto B/.";
-					}
-				}
-			</script>
-		</form>
-	</body>
+        function toggleHoras(sel) {
+          const row   = sel.parentElement;
+          const horas = row.querySelector('.campo-horas');
+          if (sel.value === 'horas_extra') {
+            horas.style.display = 'inline';
+          } else {
+            horas.style.display = 'none';
+          }
+        }
+        </script>
+    </form>
+  </body>
 </html>
