@@ -1,4 +1,4 @@
-# PlanillaService — Documentación Técnica
+# PlanillaService - Documentación Técnica
 
 Servicio principal de cálculo de planilla quincenal. Orquesta deducciones legales,
 ingresos variables y validación del Art. 161 del Código de Trabajo de Panamá.
@@ -59,12 +59,13 @@ flowchart TD
     B --> C["procesarIngresos por tipo"]
 
     C --> C1{Tipo ingreso}
-    C1 -->|horas_extra| C2["horas x valorHora x recargo, 100% gravable"]
+    C1 -->|horas_extra| C2["monto directo, 100% gravable. horas = referencia BD"]
     C1 -->|comision| C3["100% gravable"]
     C1 -->|dietas| C4["exento hasta 25% sal. mensual, excedente gravable + CSS"]
     C1 -->|prima| C5["exento hasta 50% sal. mensual, excedente gravable + CSS"]
-
-    C2 & C3 & C4 & C5 --> D["total_gravable, total_sin_descuento, excedente_css"]
+    C1 -->|bonificacion| C6["100% gravable, Art.140 CT"]
+    C6 --> D
+    C2 & C3 & C4 & C5 & C6 --> D["total_gravable, total_sin_descuento, excedente_css"]
 
     D --> E["Salario Bruto: bruto = quincena + total_gravable"]
     E --> F["Base CSS: baseCSS = bruto + excedente_css"]
@@ -84,16 +85,17 @@ flowchart TD
 
 ## Tipos de ingreso
 
-| Tipo          | Base gravable                    | Exención               | CSS aplica sobre |
-| ------------- | -------------------------------- | ---------------------- | ---------------- |
-| `horas_extra` | 100%                             | —                      | monto completo   |
-| `comision`    | 100%                             | —                      | monto completo   |
-| `dietas`      | excedente sobre 25% sal. mensual | hasta 25% sal. mensual | excedente        |
-| `prima`       | excedente sobre 50% sal. mensual | hasta 50% sal. mensual | excedente        |
+| Tipo           | Base gravable                    | Exención               | CSS aplica sobre |
+| -------------- | -------------------------------- | ---------------------- | ---------------- |
+| `horas_extra`  | 100%                             | -                      | monto completo   |
+| `comision`     | 100%                             | -                      | monto completo   |
+| `dietas`       | excedente sobre 25% sal. mensual | hasta 25% sal. mensual | excedente        |
+| `prima`        | excedente sobre 50% sal. mensual | hasta 50% sal. mensual | excedente        |
+| `bonificacion` | 100%                             | -                      | monto completo   |
 
 ---
 
-## ISR — Metodología (ISRService)
+## ISR - Metodología (ISRService)
 
 La renta anual se proyecta como:
 
@@ -103,7 +105,7 @@ rentaAnual = brutoQuincena × 2 × 13
 
 > El factor `13` incorpora el décimo tercer mes en la proyección anual (24 quincenas + décimo).
 
-### Tarifa progresiva (DGI Panamá — Art. 10, ajustado Ley 8/2010)
+### Tarifa progresiva (DGI Panamá - Art. 10, ajustado Ley 8/2010)
 
 | Tramo | Renta anual           | Tasa                                             |
 | ----- | --------------------- | ------------------------------------------------ |
@@ -120,7 +122,7 @@ deduccion = (ISR_DEDUCCION_E × ISR_TRAMO2_TASA) / 24
 
 ---
 
-## Validación Art. 161 — Código de Trabajo de Panamá
+## Validación Art. 161 - Código de Trabajo de Panamá
 
 > El porcentaje de descuento voluntario se calcula sobre el **salario bruto devengado**,
 > **no** sobre el neto después de retenciones legales (CSS, Seg. Educativo e ISR).
@@ -154,7 +156,7 @@ $alertaDesc = $pctDesc > Config::MAX_OTROS_DESC_PCT; // 0.35
 | `RECARGO_DIURNO`     | `1.25`   | Factor horas extra diurnas                    |
 | `RECARGO_NOCTURNO`   | `1.50`   | Factor horas extra nocturnas                  |
 | `RECARGO_DOMINICAL`  | `1.75`   | Factor horas extra dominicales                |
-| `MAX_OTROS_DESC_PCT` | `0.35`   | Tope Art. 161 — descuentos voluntarios        |
+| `MAX_OTROS_DESC_PCT` | `0.35`   | Tope Art. 161 - descuentos voluntarios        |
 
 ---
 

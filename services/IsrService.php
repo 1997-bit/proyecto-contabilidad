@@ -25,7 +25,7 @@ class ISRService
    *
    * - Deducción por estado civil:
    *   casado/unido -> aplica deducción proporcional (dividida entre 24 periodos)
-   *   soltero → sin deducción
+   *   soltero -> sin deducción
    *
    * Normativa base:
    * - Tabla de retención ISR de la Dirección General de Ingresos (DGI) de Panamá

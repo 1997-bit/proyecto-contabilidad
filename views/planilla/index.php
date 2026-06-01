@@ -191,7 +191,8 @@ function planilla_fmt(float $v): string {
 
 			<fieldset>
 				<legend>Otros ingresos del período</legend>
-				<small>
+        <small>
+          <strong>bonificacion</strong>: gravable 100%, Art.140 CT &nbsp;|&nbsp;
 					<strong>comision</strong>: 100% gravable &nbsp;|&nbsp;
 					<strong>dietas</strong>: exento hasta 25% sal. mensual
 					&nbsp;|&nbsp; <strong>prima</strong>: exento hasta 50%
@@ -203,7 +204,8 @@ function planilla_fmt(float $v): string {
 					<div class="ing-row">
 						<select name="ing_tipo[]" onchange="toggleHoras(this)">
 							<option value="">-- ninguno --</option>
-							<option value="comision">comision</option>
+              <option value="bonificacion">bonificacion</option>             
+              <option value="comision">comision</option>
 							<option value="dietas">dietas</option>
 							<option value="prima">prima</option>
 							<option value="horas_extra">horas_extra</option>
@@ -391,6 +393,7 @@ function planilla_fmt(float $v): string {
 					div.innerHTML = `
     <select name="ing_tipo[]" onchange="toggleHoras(this)">
           <option value="">-- ninguno --</option>
+          <option value="bonificacion">bonificacion</option>
           <option value="comision">comision</option>
           <option value="dietas">dietas</option>
           <option value="prima">prima</option>

@@ -21,10 +21,11 @@ class PlanillaService
    *                            ingresos: array de ['tipo' => string, 'monto' => float]
    *
    * Tipos de ingreso soportados:
-   *   'horas_extra' -> gravable 100%, CSS completo. Requiere 'horas' en vez de 'monto'.
+   *   'bonificacion' -> gravable 100%, CSS completo. Art.140 CT.
    *   'comision' -> gravable 100%, CSS completo.
+   *   'horas_extra' -> gravable 100%, CSS completo. Monto directo + horas como referencia.
    *   'dietas' -> exento hasta 25% salario mensual, excedente gravable + CSS.
-   *   'prima'  ->  exento hasta 50% salario mensual, excedente gravable + CSS.
+   *   'prima' -> exento hasta 50% salario mensual, excedente gravable + CSS.
    */
   public function calcularQuincena(array $colaborador, array $extras = []): array
   {
@@ -34,12 +35,9 @@ class PlanillaService
     $estadoCivil = $colaborador['estado_civil'] ?? 'soltero';
 
     //  Bases
-    $quincena  = $this->redondear($salMensual / 2, 2);
+    $quincena = $this->redondear($salMensual / 2, 2);
     $valorHora = $this->redondear($salMensual / ($horasSem * $semanasMes), 4);
 
-    // TODO: bonificación — actualmente 10% salario mensual (Config::BONIFICACION_JUNIO),
-    //       solo aplica en junio, pero tasa/lógica puede cambiar.
-    //       Pendiente definir si se mueve a ingresos del período o se mantiene aquí.
 
     //  Procesar todos los ingresos del período
     $ingresos = $this->procesarIngresos(
@@ -66,7 +64,7 @@ class PlanillaService
     $neto = $this->redondear(($bruto - $totalDesc) + $ingresos['total_sin_descuento'], 2);
 
     //  Validación disponibilidad Art. 161
-    $pctDesc    = $bruto > 0 ? ($otrosDesc / $bruto) : 0;
+    $pctDesc = $bruto > 0 ? ($otrosDesc / $bruto) : 0;
     $alertaDesc = $pctDesc > Config::MAX_OTROS_DESC_PCT;
 
     return [
@@ -79,7 +77,7 @@ class PlanillaService
       'salario_bruto' => $bruto,
 
       // Deducciones empleado
-      'desc_seguro_social'    => $css,
+      'desc_seguro_social' => $css,
       'desc_seguro_educativo' => $segEdu,
       'desc_isr' => $isr,
       'otros_descuentos' => $otrosDesc,
@@ -114,8 +112,7 @@ class PlanillaService
       $monto = (float) ($ingreso['monto'] ?? 0);
 
       $resultado = match($tipo) {
-        'horas_extra' => $this->calcularHorasExtra($ingreso, $valorHora),
-        'comision' => $this->calcularComision($monto),
+        'horas_extra', 'comision', 'bonificacion' => $this->calcularComision($monto),
         'dietas' => $this->calcularConExencion($monto, $salMensual * Config::DIETAS_EXENCION),
         'prima' => $this->calcularConExencion($monto, $salMensual * Config::PRIMA_EXENCION),
         default => ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0],
@@ -126,11 +123,11 @@ class PlanillaService
       $excedenteCSS += $resultado['excedente_css'];
 
       $detalle[] = [
-        'tipo'          => $tipo,
-        'monto'         => $monto,
-        'gravable'      => $this->redondear($resultado['gravable'],      2),
+        'tipo' => $tipo,
+        'monto' => $monto,
+        'gravable' => $this->redondear($resultado['gravable'],      2),
         'sin_descuento' => $this->redondear($resultado['sin_descuento'], 2),
-        'horas'         => $ingreso['horas'] ?? null,  // se guarda en BD, no afecta calculo
+        'horas' => $ingreso['horas'] ?? null,  // se guarda en BD, no afecta calculo
       ];   
     }
 
