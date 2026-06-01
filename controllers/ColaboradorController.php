@@ -2,13 +2,13 @@
 
 class ColaboradorController
 {
-    private PDO            $db;
+    private PDO $db;
     private CifradoService $cifrado;
     private ColaboradorModel $model;
 
     public function __construct()
     {
-        $this->db      = Conexion::conectar();
+        $this->db = Conexion::conectar();
         $this->cifrado = new CifradoService();
         $this->model   = new ColaboradorModel($this->db);
     }
@@ -16,8 +16,8 @@ class ColaboradorController
     public function index(): void
     {
         $colaboradores = $this->listar();
-        $errores       = [];
-        $valores       = [];
+        $errores = [];
+        $valores = [];
         require BASE_PATH . '/views/colaboradores/index.php';
     }
 
@@ -30,12 +30,12 @@ class ColaboradorController
 
         $valores = [
             'nombre_completo' => trim($_POST['nombre_completo'] ?? ''),
-            'cedula'          => trim($_POST['cedula'] ?? ''),
-            'estado_civil'    => $_POST['estado_civil'] ?? '',
-            'cargo'           => trim($_POST['cargo'] ?? ''),
-            'salario_base'    => $_POST['salario_base'] ?? '',
-            'tipo_salario'    => $_POST['tipo_salario'] ?? '',
-            'anio_inicio'     => $_POST['anio_inicio'] ?? '',
+            'cedula' => trim($_POST['cedula'] ?? ''),
+            'estado_civil' => $_POST['estado_civil'] ?? '',
+            'cargo' => trim($_POST['cargo'] ?? ''),
+            'salario_base' => $_POST['salario_base'] ?? '',
+            'tipo_salario' => $_POST['tipo_salario'] ?? '',
+            'anio_inicio' => $_POST['anio_inicio'] ?? '',
         ];
 
         $errores = $this->validar($valores);
@@ -48,14 +48,14 @@ class ColaboradorController
 
         $this->model->insertar([
             ':nombre_completo' => $this->cifrado->cifrar($valores['nombre_completo']),
-            ':nombre_hash'     => CifradoService::hash($valores['nombre_completo']),
-            ':cedula'          => $this->cifrado->cifrar($valores['cedula']),
-            ':cedula_hash'     => CifradoService::hash($valores['cedula']),
-            ':estado_civil'    => $valores['estado_civil'],
-            ':cargo'           => $valores['cargo'],
-            ':salario_base'    => (float) $valores['salario_base'],
-            ':tipo_salario'    => $valores['tipo_salario'],
-            ':anio_inicio'     => (int) $valores['anio_inicio'],
+            ':nombre_hash' => CifradoService::hash($valores['nombre_completo']),
+            ':cedula' => $this->cifrado->cifrar($valores['cedula']),
+            ':cedula_hash' => CifradoService::hash($valores['cedula']),
+            ':estado_civil' => $valores['estado_civil'],
+            ':cargo' => $valores['cargo'],
+            ':salario_base'  => (float) $valores['salario_base'],
+            ':tipo_salario' => $valores['tipo_salario'],
+            ':anio_inicio' => (int) $valores['anio_inicio'],
         ]);
 
         header('Location: /colaborador?ok=1');
