@@ -58,6 +58,7 @@ class PlanillaService
     $isr = $this->isrService->calcularQuincena($bruto, $estadoCivil);
 
     $otrosDesc = $this->redondear((float) ($extras['otros_descuentos'] ?? 0), 2);
+    $otrosDesc = min($otrosDesc, $bruto * Config::MAX_OTROS_DESC_PCT);
     $totalDesc = $this->redondear($css + $segEdu + $isr + $otrosDesc, 2);
 
     //  Neto = (bruto - descuentos) + ingresos exentos (no entraron al bruto)
