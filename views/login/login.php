@@ -7,7 +7,6 @@
     <title>Login</title>
   </head>
   <body>
-              <h2>Iniciar sesión</h2>
 
 
     <?php if (!empty($error)): ?>
@@ -16,6 +15,9 @@
 
     <form class="login" method="POST" action="<?= BASE_URL ?>/login">
 <input type="hidden" name="csrf_token" value="<?= SessionHelper::generarCsrf() ?>">
+        
+                          <h2>Iniciar sesión</h2>
+
         <label
         >Email<br />
         <input
