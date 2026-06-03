@@ -2,19 +2,23 @@
 <!doctype html>
 <html lang="es">
   <head>
+    <link rel="stylesheet" href="../assets/css/login.css"/>
     <meta charset="UTF-8" />
     <title>Login</title>
   </head>
   <body>
-    <h2>Iniciar sesión</h2>
+
 
     <?php if (!empty($error)): ?>
     <p style="color: red"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
 
-    <form method="POST" action="<?= BASE_URL ?>/login">
+    <form class="login" method="POST" action="<?= BASE_URL ?>/login">
 <input type="hidden" name="csrf_token" value="<?= SessionHelper::generarCsrf() ?>">
-      <label
+        
+                          <h2>Iniciar sesión</h2>
+
+        <label
         >Email<br />
         <input
           type="email"
