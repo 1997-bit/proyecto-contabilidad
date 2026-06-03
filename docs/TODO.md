@@ -1,0 +1,2 @@
+- Implementar la bonificación del 10% del salario
+- Las cargas patronales
