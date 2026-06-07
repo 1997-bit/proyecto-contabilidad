@@ -2,38 +2,38 @@
 
 class PlanillaModel
 {
-    public function __construct(private PDO $db) {}
+  public function __construct(private PDO $db) {}
 
     // Empresas 
 
     public function listarEmpresas(): array
     {
-        return $this->db
-            ->query("SELECT id, nombre FROM empresas WHERE activo = 1 ORDER BY nombre ASC")
-            ->fetchAll();
+      return $this->db
+                  ->query("SELECT id, nombre FROM empresas WHERE activo = 1 ORDER BY nombre ASC")
+                  ->fetchAll();
     }
 
-    public function buscarEmpresa(int $id): array|false
-    {
-        $stmt = $this->db->prepare("SELECT * FROM empresas WHERE id = :id LIMIT 1");
-        $stmt->execute([':id' => $id]);
-        return $stmt->fetch();
-    }
+  public function buscarEmpresa(int $id): array|false
+  {
+    $stmt = $this->db->prepare("SELECT * FROM empresas WHERE id = :id LIMIT 1");
+    $stmt->execute([':id' => $id]);
+    return $stmt->fetch();
+  }
 
-    // Colaboradores 
+  // Colaboradores 
 
-    public function buscarColaboradorPorCedulaHash(string $hash): array|false
-    {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM colaboradores WHERE cedula_hash = :h LIMIT 1"
-        );
-        $stmt->execute([':h' => $hash]);
-        return $stmt->fetch();
-    }
+  public function buscarColaboradorPorCedulaHash(string $hash): array|false
+  {
+    $stmt = $this->db->prepare(
+      "SELECT * FROM colaboradores WHERE cedula_hash = :h LIMIT 1"
+    );
+    $stmt->execute([':h' => $hash]);
+    return $stmt->fetch();
+  }
 
-    public function insertarColaborador(array $d): int
-    {
-        $stmt = $this->db->prepare("
+  public function insertarColaborador(array $d): int
+  {
+    $stmt = $this->db->prepare("
             INSERT INTO colaboradores
                 (empresa_id, nombre_completo, nombre_hash, cedula, cedula_hash,
                  estado_civil, cargo, salario_base, anio_inicio)
@@ -141,4 +141,74 @@ class PlanillaModel
 
         return $detalleId;
     }
+public function listarPlanillas(int $empresaId, int $mes, int $anio, string $periodo): array
+{
+    $where = ['1=1'];
+    $params = [];
+
+    if ($empresaId > 0) {
+        $where[] = 'p.empresa_id = :eid';
+        $params[':eid'] = $empresaId;
+    }
+    if ($mes > 0) {
+        $where[] = 'p.mes = :mes';
+        $params[':mes'] = $mes;
+    }
+    if ($anio > 0) {
+        $where[] = 'p.anio = :anio';
+        $params[':anio'] = $anio;
+    }
+    if ($periodo !== '') {
+        $where[] = 'p.periodo = :periodo';
+        $params[':periodo'] = $periodo;
+    }
+
+    $sql = "
+        SELECT
+            p.id,
+            p.periodo,
+            p.mes,
+            p.anio,
+            p.estado,
+            e.nombre AS empresa_nombre,
+            COUNT(d.id) AS total_colaboradores,
+            COALESCE(SUM(d.salario_bruto), 0) AS bruto_total,
+            COALESCE(SUM(d.salario_neto), 0) AS neto_total,
+            u.nombre AS creada_por
+        FROM planillas p
+        JOIN empresas e ON e.id = p.empresa_id
+        LEFT JOIN detalle_planilla d ON d.id_planilla = p.id
+        LEFT JOIN usuarios u ON u.id = p.created_by
+        WHERE " . implode(' AND ', $where) . "
+        GROUP BY p.id
+        ORDER BY p.anio DESC, p.mes DESC, p.periodo DESC
+    ";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+public function listarDetalleCss(int $planillaId): array
+{
+  $stmt = $this->db->prepare("
+        SELECT
+            c.cedula,
+            c.nombre_completo,
+            d.salario_bruto,
+            d.desc_seguro_social,
+            d.desc_seguro_educativo
+        FROM detalle_planilla d
+        JOIN colaboradores c ON c.id = d.id_colaborador
+        WHERE d.id_planilla = :pid
+        ORDER BY c.nombre_hash ASC
+    ");
+    $stmt->execute([':pid' => $planillaId]);
+    return $stmt->fetchAll();
+}
+public function listarColaboradoresActivos(): array
+{
+    return $this->db
+        ->query("SELECT id, nombre_completo, cedula, estado_civil, cargo, salario_base, anio_inicio FROM colaboradores WHERE activo = 1 ORDER BY id ASC")
+        ->fetchAll();
+}
 }

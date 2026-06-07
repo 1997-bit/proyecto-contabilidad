@@ -2,47 +2,56 @@
 
 class PlanillaController
 {
-    private PlanillaService $planillaService;
-    private PlanillaModel $planillaModel;
-    private CifradoService $cifrado;
+  private PlanillaService $planillaService;
+  private PlanillaModel $planillaModel;
+  private CifradoService $cifrado;
 
-    public function __construct()
-    {
-        require_once BASE_PATH . '/config/Config.php';
-        Config::cargarEnv(BASE_PATH . '/.env');
+  public function __construct()
+  {
 
-        $db = Conexion::conectar();
-        $this->planillaService = new PlanillaService(new ISRService());
-        $this->planillaModel   = new PlanillaModel($db);
-        $this->cifrado         = new CifradoService();
+    $db = Conexion::conectar();
+    $this->planillaService = new PlanillaService(new ISRService());
+    $this->planillaModel   = new PlanillaModel($db);
+    $this->cifrado         = new CifradoService();
+  }
+
+  /**
+   * GET  /planilla -> muestra formulario + tabla (sesión)
+   * POST /planilla/agregar -> agrega fila y redirige
+   * POST /planilla/eliminar -> elimina fila por índice y redirige
+   * POST /planilla/limpiar -> vacía la sesión y redirige
+   */
+  public function index(): void
+  {
+    SessionHelper::requerir();
+
+    $empresas = $this->planillaModel->listarEmpresas();
+    $errores = $_SESSION['planilla_errores'] ?? [];
+    $exito = $_SESSION['planilla_exito'] ?? '';
+    unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
+    $csrf = SessionHelper::generarCsrf();
+
+    $rawColabs = $this->planillaModel->listarColaboradoresActivos();
+    $cifrado = new CifradoService();
+    $colaboradores = [];
+    foreach ($rawColabs as $c) {
+      try {
+        $c['nombre_completo'] = $cifrado->descifrar($c['nombre_completo']);
+        $c['cedula'] = $cifrado->descifrar($c['cedula']);
+      } catch (RuntimeException) {
+        $c['nombre_completo'] = '[error]';
+        $c['cedula'] = '[error]';
+      }
+      $colaboradores[] = $c;
     }
 
-    /**
-     * GET  /planilla -> muestra formulario + tabla (sesión)
-     * POST /planilla/agregar -> agrega fila y redirige
-     * POST /planilla/eliminar -> elimina fila por índice y redirige
-     * POST /planilla/limpiar -> vacía la sesión y redirige
-     */
-    public function index(): void
-    {
-        SessionHelper::iniciar();
+    require BASE_PATH . '/views/planilla/index.php';
+  }
 
-        $filas = $_SESSION['planilla_prueba'] ?? [];
-        $totales = $this->calcularTotales($filas);
-        $errores = $_SESSION['planilla_errores'] ?? [];
-        $exito = $_SESSION['planilla_exito'] ?? '';
-        unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
-
-        $empresas = $this->planillaModel->listarEmpresas();
-        $csrf = SessionHelper::generarCsrf();
-
-        require BASE_PATH . '/views/planilla/index.php';
-    }
-
-public function agregar(): void
-{
+  public function agregar(): void
+  {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . BASE_URL . '/planilla'); exit;
+      header('Location: ' . BASE_URL . '/planilla'); exit;
     }
 
     SessionHelper::iniciar();
@@ -61,10 +70,10 @@ public function agregar(): void
 
     $ingresos = [];
     foreach ($_POST['ing_tipo'] ?? [] as $i => $tipo) {
-        if (empty($tipo)) continue;
-        $entry = ['tipo' => $tipo, 'monto' => (float) ($_POST['ing_monto'][$i] ?? 0)];
-        if ($tipo === 'horas_extra') $entry['horas'] = (float) ($_POST['ing_horas'][$i] ?? 0);
-        $ingresos[] = $entry;
+      if (empty($tipo)) continue;
+      $entry = ['tipo' => $tipo, 'monto' => (float) ($_POST['ing_monto'][$i] ?? 0)];
+      if ($tipo === 'horas_extra') $entry['horas'] = (float) ($_POST['ing_horas'][$i] ?? 0);
+      $ingresos[] = $entry;
     }
 
     $errores = [];
@@ -78,126 +87,156 @@ public function agregar(): void
     if ($anio < 2000 || $anio > 2100) $errores[] = 'Año inválido.';
 
     if (!empty($errores)) {
-        $_SESSION['planilla_errores'] = $errores;
-        header('Location: ' . BASE_URL . '/planilla'); exit;
+      $_SESSION['planilla_errores'] = $errores;
+      header('Location: ' . BASE_URL . '/planilla'); exit;
     }
 
     $empresa = $this->planillaModel->buscarEmpresa($empresaId);
     if (!$empresa) {
-        $_SESSION['planilla_errores'] = ['Empresa no encontrada.'];
-        header('Location: ' . BASE_URL . '/planilla'); exit;
+      $_SESSION['planilla_errores'] = ['Empresa no encontrada.'];
+      header('Location: ' . BASE_URL . '/planilla'); exit;
     }
 
     $calc = $this->planillaService->calcularQuincena([
-        'salario_base' => $salario,
-        'estado_civil' => $estadoCivil,
-        'horas_semanales' => (float) $empresa['horas_semanales'],
-        'semanas_mes' => (float) $empresa['semanas_mes'],
+      'salario_base' => $salario,
+      'estado_civil' => $estadoCivil,
+      'horas_semanales' => (float) $empresa['horas_semanales'],
+      'semanas_mes' => (float) $empresa['semanas_mes'],
     ], ['ingresos' => $ingresos, 'otros_descuentos' => $otrosDesc]);
 
     $_SESSION['planilla_prueba'][] = [
-        'nombre' => $nombre, 'cedula'  => $cedula,
-        'cargo' => $cargo,  'estado_civil' => $estadoCivil,
-        'salario' => $salario,'empresa_id' => $empresaId,
-        'periodo' => $periodo,'mes' => $mes, 'anio' => $anio,
-        'anio_inicio' => $anioInicio, 'ingresos' => $ingresos, 'calc' => $calc,
+      'nombre' => $nombre, 'cedula'  => $cedula,
+      'cargo' => $cargo,  'estado_civil' => $estadoCivil,
+      'salario' => $salario,'empresa_id' => $empresaId,
+      'periodo' => $periodo,'mes' => $mes, 'anio' => $anio,
+      'anio_inicio' => $anioInicio, 'ingresos' => $ingresos, 'calc' => $calc,
     ];
 
     try {
-        $pdo = Conexion::conectar();
-        $pdo->beginTransaction();
+      $pdo = Conexion::conectar();
+      $pdo->beginTransaction();
 
-        $cedulaHash = CifradoService::hash($cedula);
-        $colab = $this->planillaModel->buscarColaboradorPorCedulaHash($cedulaHash);
+      $cedulaHash = CifradoService::hash($cedula);
+      $colab = $this->planillaModel->buscarColaboradorPorCedulaHash($cedulaHash);
 
-        if ($colab) {
-            $colaboradorId = (int) $colab['id'];
-        } else {
-            $colaboradorId = $this->planillaModel->insertarColaborador([
-                ':empresa_id' => $empresaId,
-                ':nombre_completo' => $this->cifrado->cifrar($nombre),
-                ':nombre_hash' => CifradoService::hash($nombre),
-                ':cedula' => $this->cifrado->cifrar($cedula),
-                ':cedula_hash' => $cedulaHash,
-                ':estado_civil' => $estadoCivil,
-                ':cargo' => $cargo,
-                ':salario_base' => $salario,
-                ':anio_inicio' => $anioInicio,
-            ]);
-        }
+      if ($colab) {
+        $colaboradorId = (int) $colab['id'];
+      } else {
+        $colaboradorId = $this->planillaModel->insertarColaborador([
+          ':empresa_id' => $empresaId,
+          ':nombre_completo' => $this->cifrado->cifrar($nombre),
+          ':nombre_hash' => CifradoService::hash($nombre),
+          ':cedula' => $this->cifrado->cifrar($cedula),
+          ':cedula_hash' => $cedulaHash,
+          ':estado_civil' => $estadoCivil,
+          ':cargo' => $cargo,
+          ':salario_base' => $salario,
+          ':anio_inicio' => $anioInicio,
+        ]);
+      }
 
-        $planillaRow = $this->planillaModel->buscarPlanilla($empresaId, $periodo, $mes, $anio);
-        $planillaId  = $planillaRow
-            ? (int) $planillaRow['id']
-            : $this->planillaModel->crearPlanilla($empresaId, $periodo, $mes, $anio, $_SESSION['usuario_id'] ?? null);
+      $planillaRow = $this->planillaModel->buscarPlanilla($empresaId, $periodo, $mes, $anio);
+      $planillaId  = $planillaRow
+        ? (int) $planillaRow['id']
+        : $this->planillaModel->crearPlanilla($empresaId, $periodo, $mes, $anio, $_SESSION['usuario_id'] ?? null);
 
-        if ($this->planillaModel->existeDetalle($planillaId, $colaboradorId)) {
-            $pdo->rollBack();
-            $_SESSION['planilla_errores'] = ["Este colaborador ya tiene detalle en {$periodo} {$mes}/{$anio}."];
-            header('Location: ' . BASE_URL . '/planilla'); exit;
-        }
+      if ($this->planillaModel->existeDetalle($planillaId, $colaboradorId)) {
+        $pdo->rollBack();
+        $_SESSION['planilla_errores'] = ["Este colaborador ya tiene detalle en {$periodo} {$mes}/{$anio}."];
+        header('Location: ' . BASE_URL . '/planilla'); exit;
+      }
 
-        $this->planillaModel->insertarDetalle($planillaId, $colaboradorId, $calc, $_SESSION['usuario_id'] ?? null);
-        $pdo->commit();
+      $this->planillaModel->insertarDetalle($planillaId, $colaboradorId, $calc, $_SESSION['usuario_id'] ?? null);
+      $pdo->commit();
 
-        $_SESSION['planilla_exito'] = "Guardado — Planilla #{$planillaId} · Colaborador #{$colaboradorId}";
+      $_SESSION['planilla_exito'] = "Guardado — Planilla #{$planillaId} · Colaborador #{$colaboradorId}";
 
     } catch (\Throwable $e) {
-        if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-        $_SESSION['planilla_errores'] = ['Error BD: ' . $e->getMessage()];
+      if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+      $_SESSION['planilla_errores'] = ['Error BD: ' . $e->getMessage()];
     }
 
     header('Location: ' . BASE_URL . '/planilla'); exit;
-}
-    public function eliminar(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/planilla');
-            exit;
-        }
-
-        SessionHelper::iniciar();
-        $idx = (int) ($_POST['idx'] ?? -1);
-
-        if (isset($_SESSION['planilla_prueba'][$idx])) {
-            array_splice($_SESSION['planilla_prueba'], $idx, 1);
-        }
-
-        header('Location: ' . BASE_URL . '/planilla');
-        exit;
+  }
+  public function eliminar(): void
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ' . BASE_URL . '/planilla');
+      exit;
     }
 
-    public function limpiar(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/planilla');
-            exit;
-        }
+    SessionHelper::iniciar();
+    $idx = (int) ($_POST['idx'] ?? -1);
 
-        SessionHelper::iniciar();
-        unset($_SESSION['planilla_prueba']);
-
-        header('Location: ' . BASE_URL . '/planilla');
-        exit;
+    if (isset($_SESSION['planilla_prueba'][$idx])) {
+      array_splice($_SESSION['planilla_prueba'], $idx, 1);
     }
 
-    //Helpers privados
+    header('Location: ' . BASE_URL . '/planilla');
+    exit;
+  }
 
-    private function calcularTotales(array $filas): array
-    {
-        $keys = [
-            'salario_base_quincena', 'otros_ingresos', 'salario_bruto',
-            'desc_seguro_social', 'desc_seguro_educativo', 'desc_isr',
-            'otros_descuentos', 'total_descuentos',
-            'otros_ingresos_sin_descuento', 'salario_neto',
-        ];
-
-        $t = array_fill_keys($keys, 0.0);
-        foreach ($filas as $f) {
-            foreach ($keys as $k) {
-                $t[$k] += (float) ($f['calc'][$k] ?? 0);
-            }
-        }
-        return $t;
+  public function limpiar(): void
+  {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: ' . BASE_URL . '/planilla');
+      exit;
     }
+
+    SessionHelper::iniciar();
+    unset($_SESSION['planilla_prueba']);
+
+    header('Location: ' . BASE_URL . '/planilla');
+    exit;
+  }
+
+  //Helpers privados
+
+  private function calcularTotales(array $filas): array
+  {
+    $keys = [
+      'salario_base_quincena', 'otros_ingresos', 'salario_bruto',
+      'desc_seguro_social', 'desc_seguro_educativo', 'desc_isr',
+      'otros_descuentos', 'total_descuentos',
+      'otros_ingresos_sin_descuento', 'salario_neto',
+    ];
+
+    $t = array_fill_keys($keys, 0.0);
+    foreach ($filas as $f) {
+      foreach ($keys as $k) {
+        $t[$k] += (float) ($f['calc'][$k] ?? 0);
+      }
+    }
+    return $t;
+  }
+  public function test(): void
+  {
+    SessionHelper::iniciar();
+
+    $filas = $_SESSION['planilla_prueba'] ?? [];
+    $totales = $this->calcularTotales($filas);
+    $errores = $_SESSION['planilla_errores'] ?? [];
+    $exito = $_SESSION['planilla_exito'] ?? '';
+    unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
+
+    $empresas = $this->planillaModel->listarEmpresas();
+    $csrf = SessionHelper::generarCsrf();
+
+    require BASE_PATH . '/views/planilla/test.php';
+  }
+
+  public function lista(): void
+  {
+    SessionHelper::requerir();
+
+    $empresas = $this->planillaModel->listarEmpresas();
+    $empresaId = (int) ($_GET['empresa_id'] ?? 0);
+    $mes = (int) ($_GET['mes'] ?? 0);
+    $anio = (int) ($_GET['anio'] ?? (int) date('Y'));
+    $periodo = $_GET['periodo'] ?? '';
+
+    $planillas = $this->planillaModel->listarPlanillas($empresaId, $mes, $anio, $periodo);
+
+    require BASE_PATH . '/views/planilla/lista.php';
+  }
 }
