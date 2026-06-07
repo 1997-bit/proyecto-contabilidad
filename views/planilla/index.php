@@ -49,6 +49,7 @@ button { margin: 4px 4px 4px 0; padding: 4px 10px; cursor: pointer; }
 <form method="POST" action="<?= BASE_URL ?>/planilla/agregar">
 <input type="hidden" name="periodo" value="<?= htmlspecialchars($periodo) ?>">
 <input type="hidden" name="mes" value="<?= $mes ?>">
+<input type="hidden" name="csrf_token" value="<?= $csrf ?>">
     <?php if (!empty($colaboradores)): ?>
     <fieldset>
         <legend>Colaborador</legend>

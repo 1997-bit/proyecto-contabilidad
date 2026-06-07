@@ -58,4 +58,17 @@ class SessionHelper
     return isset($_SESSION['csrf_token'])
       && hash_equals($_SESSION['csrf_token'], $token);
   }
+  public static function flash(string $key, mixed $val): void
+  {
+    self::iniciar();
+    $_SESSION['_flash'][$key] = $val;
+  }
+
+  public static function getFlash(string $key, mixed $default = null): mixed
+  {
+    self::iniciar();
+    $val = $_SESSION['_flash'][$key] ?? $default;
+    unset($_SESSION['_flash'][$key]);
+    return $val;
+  }
 }

@@ -34,9 +34,8 @@ class PlanillaController
     $mes = (int) ($_GET['mes'] ?? (int) date('n'));
     $anio = (int) ($_GET['anio'] ?? (int) date('Y'));
 
-    $errores = $_SESSION['planilla_errores'] ?? [];
-    $exito = $_SESSION['planilla_exito'] ?? '';
-    unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
+    $errores = SessionHelper::getFlash('planilla_errores', []);
+    $exito = SessionHelper::getFlash('planilla_exito', '');
     $csrf = SessionHelper::generarCsrf();
 
     $rawColabs = $this->planillaModel->listarColaboradoresActivos($empresaId);
@@ -102,6 +101,11 @@ class PlanillaController
       header('Location: ' . BASE_URL . '/planilla?' . $qs); exit;
     }
 
+    if (!SessionHelper::verificarCsrf($_POST['csrf_token'] ?? '')) {
+      http_response_code(403);
+      exit('Token inválido.');
+    }
+
     SessionHelper::requerir();
 
     $nombre = trim($_POST['nombre'] ?? '');
@@ -129,7 +133,7 @@ class PlanillaController
     if ($cedula === '') $errores[] = 'La cédula es requerida.';
     if ($salario <= 0) $errores[] = 'El salario base debe ser mayor a 0.';
     if ($empresaId <= 0) {
-      $_SESSION['planilla_errores'] = ['Sin empresa activa. Configure en Settings.'];
+      SessionHelper::flash('planilla_errores', ['Sin empresa activa. Configure en Settings.']);
       header('Location: ' . BASE_URL . '/settings');
       exit;
     }
@@ -139,13 +143,13 @@ class PlanillaController
     if ($anio < 2000 || $anio > 2100) $errores[] = 'Año inválido.';
 
     if (!empty($errores)) {
-      $_SESSION['planilla_errores'] = $errores;
+      SessionHelper::flash('planilla_errores', $errores);
       header('Location: ' . BASE_URL . '/planilla'); exit;
     }
 
     $empresa = $this->planillaModel->buscarEmpresa($empresaId);
     if (!$empresa) {
-      $_SESSION['planilla_errores'] = ['Empresa no encontrada.'];
+      SessionHelper::flash('planilla_errores', ['Empresa no encontrada.']);
       header('Location: ' . BASE_URL . '/planilla'); exit;
     }
 
@@ -186,18 +190,18 @@ class PlanillaController
 
       if ($this->planillaModel->existeDetalle($planillaId, $colaboradorId)) {
         $pdo->rollBack();
-        $_SESSION['planilla_errores'] = ["Este colaborador ya tiene detalle en {$periodo} {$mes}/{$anio}."];
+        SessionHelper::flash('planilla_errores', ["Este colaborador ya tiene detalle en {$periodo} {$mes}/{$anio}."]);
         header('Location: ' . BASE_URL . '/planilla'); exit;
       }
 
       $this->planillaModel->insertarDetalle($planillaId, $colaboradorId, $calc, $_SESSION['usuario_id'] ?? null);
       $pdo->commit();
 
-      $_SESSION['planilla_exito'] = "Guardado — Planilla #{$planillaId} · Colaborador #{$colaboradorId}";
+      SessionHelper::flash('planilla_exito', "Guardado — Planilla #{$planillaId} · Colaborador #{$colaboradorId}");
 
     } catch (\Throwable $e) {
       if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-      $_SESSION['planilla_errores'] = ['Error BD: ' . $e->getMessage()];
+      SessionHelper::flash('planilla_errores', ['Error BD: ' . $e->getMessage()]);
     }
 
     $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
@@ -264,9 +268,8 @@ class PlanillaController
 
     $filas = $_SESSION['planilla_prueba'] ?? [];
     $totales = $this->calcularTotales($filas);
-    $errores = $_SESSION['planilla_errores'] ?? [];
-    $exito = $_SESSION['planilla_exito'] ?? '';
-    unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
+    $errores = SessionHelper::getFlash('planilla_errores', []);
+    $exito   = SessionHelper::getFlash('planilla_exito', '');
 
     $empresas = $this->planillaModel->listarEmpresas();
     $csrf = SessionHelper::generarCsrf();
