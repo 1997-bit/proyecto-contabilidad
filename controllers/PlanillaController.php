@@ -24,25 +24,71 @@ class PlanillaController
   public function index(): void
   {
     SessionHelper::requerir();
+    if (empty($_SESSION['ctx']['empresa_id'])) {
+      header('Location: ' . BASE_URL . '/settings');
+      exit;
+    }
 
-    $empresas = $this->planillaModel->listarEmpresas();
+    $empresaId = (int) $_SESSION['ctx']['empresa_id'];
+    $periodo   = $_GET['periodo'] ?? '1ra_quincena';
+    $mes       = (int) ($_GET['mes'] ?? (int) date('n'));
+    $anio      = (int) ($_GET['anio'] ?? (int) date('Y'));
+
     $errores = $_SESSION['planilla_errores'] ?? [];
-    $exito = $_SESSION['planilla_exito'] ?? '';
+    $exito   = $_SESSION['planilla_exito'] ?? '';
     unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
     $csrf = SessionHelper::generarCsrf();
 
-    $rawColabs = $this->planillaModel->listarColaboradoresActivos();
+    $rawColabs = $this->planillaModel->listarColaboradoresActivos($empresaId);
     $cifrado = new CifradoService();
     $colaboradores = [];
     foreach ($rawColabs as $c) {
       try {
         $c['nombre_completo'] = $cifrado->descifrar($c['nombre_completo']);
-        $c['cedula'] = $cifrado->descifrar($c['cedula']);
+        $c['cedula']          = $cifrado->descifrar($c['cedula']);
       } catch (RuntimeException) {
         $c['nombre_completo'] = '[error]';
-        $c['cedula'] = '[error]';
+        $c['cedula']          = '[error]';
       }
       $colaboradores[] = $c;
+    }
+
+    $filas   = [];
+    $totales = [];
+    $planillaRow = $this->planillaModel->buscarPlanilla($empresaId, $periodo, $mes, $anio);
+
+    if ($planillaRow) {
+      $rawFilas = $this->planillaModel->listarDetallePlanilla((int) $planillaRow['id']);
+      foreach ($rawFilas as $f) {
+        try {
+          $nombre = $cifrado->descifrar($f['nombre_completo'] ?? '');
+          $cedula = $cifrado->descifrar($f['cedula'] ?? '');
+        } catch (RuntimeException) {
+          $nombre = '[error]';
+          $cedula = '[error]';
+        }
+        $filas[] = [
+          'nombre'       => $nombre,
+          'cedula'       => $cedula,
+          'cargo'        => $f['cargo'],
+          'estado_civil' => $f['estado_civil'],
+          'calc'         => [
+            'salario_base_quincena'        => (float) $f['salario_base_quincena'],
+            'otros_ingresos'               => (float) $f['otros_ingresos'],
+            'otros_ingresos_sin_descuento' => (float) $f['otros_ingresos_sin_descuento'],
+            'salario_bruto'                => (float) $f['salario_bruto'],
+            'desc_seguro_social'           => (float) $f['desc_seguro_social'],
+            'desc_seguro_educativo'        => (float) $f['desc_seguro_educativo'],
+            'desc_isr'                     => (float) $f['desc_isr'],
+            'otros_descuentos'             => (float) $f['otros_descuentos'],
+            'total_descuentos'             => (float) $f['total_descuentos'],
+            'salario_neto'                 => (float) $f['salario_neto'],
+            'pct_descuentos'               => $f['pct_descuentos'],
+            'alerta_desc_excede'           => (bool)  $f['alerta_desc_excede'],
+          ],
+        ];
+      }
+      $totales = $this->calcularTotales($filas);
     }
 
     require BASE_PATH . '/views/planilla/index.php';
@@ -50,11 +96,13 @@ class PlanillaController
 
   public function agregar(): void
   {
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      header('Location: ' . BASE_URL . '/planilla'); exit;
+      $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
+      header('Location: ' . BASE_URL . '/planilla?' . $qs); exit;
     }
 
-    SessionHelper::iniciar();
+    SessionHelper::requerir();
 
     $nombre = trim($_POST['nombre'] ?? '');
     $cedula = trim($_POST['cedula'] ?? '');
@@ -63,7 +111,7 @@ class PlanillaController
     $estadoCivil = $_POST['estado_civil'] ?? 'soltero';
     $otrosDesc = (float) ($_POST['otros_descuentos']?? 0);
     $anioInicio = (int)   ($_POST['anio_inicio'] ?? date('Y'));
-    $empresaId = (int)   ($_POST['empresa_id'] ?? 0);
+    $empresaId = (int) ($_SESSION['ctx']['empresa_id'] ?? 0);
     $periodo = $_POST['periodo'] ?? '1ra_quincena';
     $mes = (int)   ($_POST['mes'] ?? (int) date('n'));
     $anio = (int)   ($_POST['anio'] ?? (int) date('Y'));
@@ -80,7 +128,11 @@ class PlanillaController
     if ($nombre === '') $errores[] = 'El nombre es requerido.';
     if ($cedula === '') $errores[] = 'La cédula es requerida.';
     if ($salario <= 0) $errores[] = 'El salario base debe ser mayor a 0.';
-    if ($empresaId <= 0) $errores[] = 'Debe seleccionar una empresa.';
+    if ($empresaId <= 0) {
+      $_SESSION['planilla_errores'] = ['Sin empresa activa. Configure en Settings.'];
+      header('Location: ' . BASE_URL . '/settings');
+      exit;
+    }
     if (!in_array($estadoCivil, ['soltero','casado','unido'], true)) $errores[] = 'Estado civil inválido.';
     if (!in_array($periodo, ['1ra_quincena','2da_quincena'], true))  $errores[] = 'Período inválido.';
     if ($mes < 1 || $mes > 12) $errores[] = 'Mes inválido.';
@@ -103,14 +155,6 @@ class PlanillaController
       'horas_semanales' => (float) $empresa['horas_semanales'],
       'semanas_mes' => (float) $empresa['semanas_mes'],
     ], ['ingresos' => $ingresos, 'otros_descuentos' => $otrosDesc]);
-
-    $_SESSION['planilla_prueba'][] = [
-      'nombre' => $nombre, 'cedula'  => $cedula,
-      'cargo' => $cargo,  'estado_civil' => $estadoCivil,
-      'salario' => $salario,'empresa_id' => $empresaId,
-      'periodo' => $periodo,'mes' => $mes, 'anio' => $anio,
-      'anio_inicio' => $anioInicio, 'ingresos' => $ingresos, 'calc' => $calc,
-    ];
 
     try {
       $pdo = Conexion::conectar();
@@ -156,7 +200,9 @@ class PlanillaController
       $_SESSION['planilla_errores'] = ['Error BD: ' . $e->getMessage()];
     }
 
-    header('Location: ' . BASE_URL . '/planilla'); exit;
+    $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
+    header('Location: ' . BASE_URL . '/planilla?' . $qs);
+    exit;
   }
   public function eliminar(): void
   {
@@ -186,8 +232,11 @@ class PlanillaController
     SessionHelper::iniciar();
     unset($_SESSION['planilla_prueba']);
 
-    header('Location: ' . BASE_URL . '/planilla');
-    exit;
+    $periodo = $_POST['periodo'] ?? '1ra_quincena';
+    $mes     = (int) ($_POST['mes']  ?? (int) date('n'));
+    $anio    = (int) ($_POST['anio'] ?? (int) date('Y'));
+    $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
+    header('Location: ' . BASE_URL . '/planilla?' . $qs);    exit;
   }
 
   //Helpers privados

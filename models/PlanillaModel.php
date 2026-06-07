@@ -205,10 +205,45 @@ public function listarDetalleCss(int $planillaId): array
     $stmt->execute([':pid' => $planillaId]);
     return $stmt->fetchAll();
 }
-public function listarColaboradoresActivos(): array
+public function listarColaboradoresActivos(int $empresaId): array
 {
-    return $this->db
-        ->query("SELECT id, nombre_completo, cedula, estado_civil, cargo, salario_base, anio_inicio FROM colaboradores WHERE activo = 1 ORDER BY id ASC")
-        ->fetchAll();
+    $stmt = $this->db->prepare("
+        SELECT id, nombre_completo, cedula, estado_civil, cargo, salario_base, anio_inicio
+        FROM colaboradores
+        WHERE activo = 1 AND empresa_id = :eid
+        ORDER BY id ASC
+    ");
+    $stmt->execute([':eid' => $empresaId]);
+    return $stmt->fetchAll();
+}
+public function listarDetallePlanilla(int $planillaId): array
+{
+    $stmt = $this->db->prepare("
+        SELECT
+            d.id,
+            d.id_colaborador,
+            d.salario_base_quincena,
+            d.otros_ingresos,
+            d.otros_ingresos_sin_descuento,
+            d.salario_bruto,
+            d.desc_seguro_social,
+            d.desc_seguro_educativo,
+            d.desc_isr,
+            d.otros_descuentos,
+            d.total_descuentos,
+            d.salario_neto,
+            d.pct_descuentos,
+            d.alerta_desc_excede,
+            c.nombre_completo,
+            c.cedula,
+            c.cargo,
+            c.estado_civil
+        FROM detalle_planilla d
+        JOIN colaboradores c ON c.id = d.id_colaborador
+        WHERE d.id_planilla = :pid
+        ORDER BY d.id ASC
+    ");
+    $stmt->execute([':pid' => $planillaId]);
+    return $stmt->fetchAll();
 }
 }
