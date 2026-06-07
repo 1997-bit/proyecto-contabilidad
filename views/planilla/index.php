@@ -132,6 +132,28 @@ function planilla_fmt(float $v): string {
 
 		<!-- FORMULARIO AGREGAR -->
 		<form method="POST" action="<?= BASE_URL ?>/planilla/agregar">
+			<!-- CREADO - Issue #5: Búsqueda de empleado para cargar datos automáticamente -->
+			<fieldset>
+				<legend>🔍 Buscar Empleado</legend>
+
+				<label for="cedula_buscar">Cédula:</label>
+				<input
+					type="text"
+					id="cedula_buscar"
+					placeholder="8-888-8888"
+					autocomplete="off"
+				/>
+				<button type="button" id="btn_buscar">Buscar</button>
+				<span id="estatus_busqueda"></span><br /><br />
+
+				<div id="empleado-info" style="display: none; padding: 10px; background: #e8f5e9; border: 1px solid #4caf50; border-radius: 4px; margin-top: 10px;">
+					<strong>✓ Encontrado:</strong><br>
+					Nombre: <span id="info-nombre"></span><br>
+					Cargo: <span id="info-cargo"></span><br>
+					Salario: <span id="info-salario"></span>
+				</div>
+			</fieldset>
+
 			<fieldset>
 				<legend>Datos del colaborador</legend>
 
@@ -385,7 +407,56 @@ function planilla_fmt(float $v): string {
     <?php endif; ?>
 
 
-			<script>
+			<script>				// CREADO - Issue #5: Búsqueda de empleado con AJAX
+				document.getElementById('btn_buscar').addEventListener('click', function() {
+					const cedula = document.getElementById('cedula_buscar').value.trim();
+					const estatus = document.getElementById('estatus_busqueda');
+
+					if (cedula.length < 5) {
+						estatus.innerHTML = '<span style="color: red;">⚠ Ingrese una cédula válida</span>';
+						return;
+					}
+
+					estatus.innerHTML = '<span style="color: #666;">🔄 Buscando...</span>';
+
+					fetch('<?= BASE_URL ?>/planilla/buscarEmpleado?cedula=' + encodeURIComponent(cedula))
+						.then(r => r.json())
+						.then(data => {
+							if (data.error) {
+								estatus.innerHTML = '<span style="color: red;">✗ ' + data.error + '</span>';
+								document.getElementById('empleado-info').style.display = 'none';
+								return;
+							}
+
+							// Llenar campos automáticamente
+							document.getElementById('nombre').value = data.nombre_completo;
+							document.getElementById('cedula').value = data.cedula;
+							document.getElementById('cargo').value = data.cargo;
+							document.getElementById('salario').value = data.salario_base;
+							document.getElementById('estado_civil').value = data.estado_civil;
+							document.getElementById('anio_inicio').value = data.anio_inicio;
+
+							// Mostrar información de confirmación
+							document.getElementById('info-nombre').textContent = data.nombre_completo;
+							document.getElementById('info-cargo').textContent = data.cargo;
+							document.getElementById('info-salario').textContent = 'B/. ' + parseFloat(data.salario_base).toFixed(2);
+							document.getElementById('empleado-info').style.display = 'block';
+
+							estatus.innerHTML = '<span style="color: green;">✓ Cargado</span>';
+						})
+						.catch(e => {
+							estatus.innerHTML = '<span style="color: red;">✗ Error de conexión</span>';
+							console.error(e);
+						});
+				});
+
+				// Permitir búsqueda con Enter
+				document.getElementById('cedula_buscar').addEventListener('keypress', function(e) {
+					if (e.key === 'Enter') {
+						document.getElementById('btn_buscar').click();
+					}
+				});
+
 				function agregarFilaIng() {
 					const c = document.getElementById("ingresos-container");
 					const div = document.createElement("div");

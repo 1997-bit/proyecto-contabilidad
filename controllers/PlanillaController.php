@@ -22,6 +22,7 @@ class PlanillaController
      * POST /planilla/agregar -> agrega fila y redirige
      * POST /planilla/eliminar -> elimina fila por índice y redirige
      * POST /planilla/limpiar -> vacía la sesión y redirige
+     * GET  /planilla/buscarEmpleado?cedula=X -> busca empleado por cedula
      */
     public function index(): void
     {
@@ -199,5 +200,46 @@ public function agregar(): void
             }
         }
         return $t;
+    }
+
+    /**
+     * GET /planilla/buscar-empleado?cedula=8-123-4567
+     * Retorna JSON con datos del empleado para auto-llenar formulario
+     * CREADO - Issue #5: Captura de planilla - búsqueda de empleado
+     */
+    public function buscarEmpleado(): void
+    {
+        header('Content-Type: application/json');
+
+        $cedula = trim($_GET['cedula'] ?? '');
+        if (strlen($cedula) < 5) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Cédula inválida']);
+            exit;
+        }
+
+        $cedulaHash = CifradoService::hash($cedula);
+        $colab = $this->planillaModel->buscarColaboradorPorCedulaHash($cedulaHash);
+
+        if (!$colab) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Empleado no encontrado']);
+            exit;
+        }
+
+        // Descifrar datos sensibles
+        $nombre = $this->cifrado->descifrar($colab['nombre_completo']);
+        $cedulaDescifrada = $this->cifrado->descifrar($colab['cedula']);
+
+        echo json_encode([
+            'id' => (int) $colab['id'],
+            'nombre_completo' => $nombre,
+            'cedula' => $cedulaDescifrada,
+            'cargo' => $colab['cargo'],
+            'salario_base' => (float) $colab['salario_base'],
+            'estado_civil' => $colab['estado_civil'],
+            'anio_inicio' => (int) $colab['anio_inicio'],
+        ]);
+        exit;
     }
 }
