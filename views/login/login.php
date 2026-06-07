@@ -34,6 +34,9 @@
       </label>
       <br /><br />
       <button type="submit">Entrar</button>
+      <!-- CREADO: Enlace a registro (2024) - Permite usuarios nuevos auto-registrarse -->
+      <br /><br />
+      <p>¿No tienes cuenta? <a href="<?= BASE_URL ?>/register">Registrarse aquí</a></p>
     </form>
   </body>
 </html>

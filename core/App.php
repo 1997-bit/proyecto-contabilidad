@@ -33,7 +33,11 @@ class App
   private static function definirRutas(): void
   {
     define('BASE_PATH', realpath(__DIR__ . '/..'));
-    define('BASE_URL',  '');
+    
+    // MODIFICADO: BASE_URL actualizado a ruta completa para soportar proyecto en subdirectorio
+    // Antes: define('BASE_URL',  '');
+    // Ahora: Incluye la ruta relativa desde DocumentRoot de Apache
+    define('BASE_URL',  '/Contabilidad/proyecto-contabilidad/public');
   }
 
   private static function cargarNucleo(): void
