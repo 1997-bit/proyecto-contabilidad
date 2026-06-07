@@ -5,7 +5,7 @@
 --      eliminadas -> reemplazadas por totales + detalle_ingresos
 --    · nueva tabla detalle_ingresos (ingresos genéricos por tipo)
 --    · colaboradores: elimina tipo_salario / grupo (modelo viejo
---      de grupos excluyentes); ingresos definidos por período
+  --      de grupos excluyentes); ingresos definidos por período
 --    · detalle_planilla: agrega otros_ingresos_sin_descuento,
 --      valor_hora, pct_descuentos, alerta_desc_excede
 --    · planillas: agrega empresa_id (una planilla por empresa)
@@ -24,8 +24,8 @@
 --    · Auditoría: ISO 27001 A.12.4 (audit_log)
 
 CREATE DATABASE IF NOT EXISTS planillas_prospera
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
 
 USE planillas_prospera;
 
@@ -50,7 +50,7 @@ CREATE TABLE usuarios (
   email_hash     CHAR(64)         NOT NULL COMMENT 'SHA-256 hex - único uso: lookup en login',
   password_hash  VARCHAR(255)     NOT NULL COMMENT 'Argon2id',
   rol            ENUM('admin','contador','visor') NOT NULL DEFAULT 'visor'
-                                  COMMENT 'visor=solo lectura · contador=crear/editar · admin=aprobar/pagar/anular/usuarios',
+  COMMENT 'visor=solo lectura · contador=crear/editar · admin=aprobar/pagar/anular/usuarios',
   login_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0    COMMENT 'Intentos fallidos consecutivos; reset a 0 en login exitoso',
   locked_until   DATETIME         NULL                  COMMENT 'NULL = cuenta activa; fecha futura = bloqueada hasta esa fecha',
   last_login     DATETIME         NULL                  COMMENT 'Último login exitoso (UTC)',
@@ -63,9 +63,9 @@ CREATE TABLE usuarios (
   INDEX      idx_activo    (activo)
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Usuarios con acceso al sistema. PII cifrada en reposo.';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Usuarios con acceso al sistema. PII cifrada en reposo.';
 
 -- ------------------------------------------------------------
 --  empresas
@@ -91,9 +91,9 @@ CREATE TABLE empresas (
   INDEX idx_activo (activo)
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Una fila por empresa cliente. Parámetros de nómina heredados a colaboradores.';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Una fila por empresa cliente. Parámetros de nómina heredados a colaboradores.';
 
 -- ------------------------------------------------------------
 --  colaboradores
@@ -103,7 +103,7 @@ CREATE TABLE empresas (
 --  · tipo_salario eliminado (v1): en v2 los ingresos son
 --    dinámicos por período -> tabla detalle_ingresos
 --  · salario_base = salario mensual bruto (base para quincena,
---    valor-hora, umbrales de exención CSS)
+  --    valor-hora, umbrales de exención CSS)
 --  · anio_inicio para cálculo de antigüedad (décimo, vacaciones)
 -- ------------------------------------------------------------
 CREATE TABLE colaboradores (
@@ -114,7 +114,7 @@ CREATE TABLE colaboradores (
   cedula          VARBINARY(255) NOT NULL                COMMENT 'AES-256-GCM cifrado',
   cedula_hash     CHAR(64)       NULL                    COMMENT 'SHA-256 hex - búsqueda + unicidad',
   estado_civil    ENUM('soltero','casado','unido') NOT NULL DEFAULT 'soltero'
-                                  COMMENT 'Afecta deducción ISR (Ley 8/2010)',
+  COMMENT 'Afecta deducción ISR (Ley 8/2010)',
   cargo           VARCHAR(100)   NOT NULL,
   salario_base    DECIMAL(10,2)  NOT NULL                COMMENT 'Salario mensual bruto',
   anio_inicio     YEAR           NOT NULL                COMMENT 'Año de ingreso - base para cálculo de antigüedad',
@@ -132,13 +132,13 @@ CREATE TABLE colaboradores (
   INDEX      idx_created_at  (created_at),
 
   CONSTRAINT fk_colaborador_empresa
-    FOREIGN KEY (empresa_id) REFERENCES empresas(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE
+  FOREIGN KEY (empresa_id) REFERENCES empresas(id)
+  ON DELETE RESTRICT ON UPDATE CASCADE
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Datos personales y laborales. PII cifrada en reposo. Sin tipo_salario (v2: ingresos dinámicos por período).';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Datos personales y laborales. PII cifrada en reposo. Sin tipo_salario (v2: ingresos dinámicos por período).';
 
 -- ------------------------------------------------------------
 --  planillas  (encabezado de período)
@@ -156,7 +156,7 @@ CREATE TABLE planillas (
   mes              TINYINT UNSIGNED NOT NULL                COMMENT '1-12',
   anio             YEAR             NOT NULL,
   estado           ENUM('borrador','aprobada','pagada','anulada') NOT NULL DEFAULT 'borrador'
-                                    COMMENT 'Ciclo: borrador→aprobada→pagada | anulada (solo admin)',
+  COMMENT 'Ciclo: borrador→aprobada→pagada | anulada (solo admin)',
   motivo_anulacion VARCHAR(500)     NULL                    COMMENT 'Obligatorio cuando estado = anulada',
   anulada_por      INT UNSIGNED     NULL                    COMMENT 'FK usuarios.id - quién anuló',
   fecha_anulacion  DATETIME         NULL,
@@ -168,22 +168,22 @@ CREATE TABLE planillas (
 
   PRIMARY KEY (id),
   UNIQUE KEY uq_empresa_periodo_mes_anio (empresa_id, periodo, mes, anio)
-                                          COMMENT 'Una planilla por empresa por quincena',
+  COMMENT 'Una planilla por empresa por quincena',
   INDEX      idx_estado      (estado),
   INDEX      idx_empresa_id  (empresa_id),
   INDEX      idx_created_by  (created_by),
 
   CONSTRAINT fk_planilla_empresa
-    FOREIGN KEY (empresa_id)  REFERENCES empresas(id)  ON DELETE RESTRICT ON UPDATE CASCADE,
+  FOREIGN KEY (empresa_id)  REFERENCES empresas(id)  ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_planilla_creada_por
-    FOREIGN KEY (created_by)  REFERENCES usuarios(id)  ON DELETE SET NULL ON UPDATE CASCADE,
+  FOREIGN KEY (created_by)  REFERENCES usuarios(id)  ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_planilla_anulada_por
-    FOREIGN KEY (anulada_por) REFERENCES usuarios(id)  ON DELETE SET NULL ON UPDATE CASCADE
+  FOREIGN KEY (anulada_por) REFERENCES usuarios(id)  ON DELETE SET NULL ON UPDATE CASCADE
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Encabezado de período de nómina. Una por empresa por quincena.';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Encabezado de período de nómina. Una por empresa por quincena.';
 
 -- ------------------------------------------------------------
 --  detalle_planilla  (una fila por colaborador por período)
@@ -252,16 +252,16 @@ CREATE TABLE detalle_planilla (
   INDEX      idx_created_by          (created_by),
 
   CONSTRAINT fk_detalle_planilla
-    FOREIGN KEY (id_planilla)    REFERENCES planillas(id)     ON DELETE RESTRICT ON UPDATE CASCADE,
+  FOREIGN KEY (id_planilla)    REFERENCES planillas(id)     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_detalle_colaborador
-    FOREIGN KEY (id_colaborador) REFERENCES colaboradores(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  FOREIGN KEY (id_colaborador) REFERENCES colaboradores(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_detalle_created_by
-    FOREIGN KEY (created_by)     REFERENCES usuarios(id)      ON DELETE SET NULL ON UPDATE CASCADE
+  FOREIGN KEY (created_by)     REFERENCES usuarios(id)      ON DELETE SET NULL ON UPDATE CASCADE
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Línea de planilla por colaborador. Montos desnormalizados para auditoría histórica.';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Línea de planilla por colaborador. Montos desnormalizados para auditoría histórica.';
 
 -- ------------------------------------------------------------
 --  detalle_ingresos  (desglose de ingresos por tipo)
@@ -302,13 +302,13 @@ CREATE TABLE detalle_ingresos (
   INDEX idx_tipo    (tipo),
 
   CONSTRAINT fk_ing_detalle
-    FOREIGN KEY (id_detalle) REFERENCES detalle_planilla(id)
-    ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY (id_detalle) REFERENCES detalle_planilla(id)
+  ON DELETE CASCADE ON UPDATE CASCADE
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Desglose de ingresos por tipo por línea de planilla. Art. 91 Ley CSS.';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Desglose de ingresos por tipo por línea de planilla. Art. 91 Ley CSS.';
 
 -- ------------------------------------------------------------
 --  audit_log
@@ -335,9 +335,9 @@ CREATE TABLE audit_log (
   INDEX idx_created_at     (created_at),
 
   CONSTRAINT fk_audit_usuario
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL ON UPDATE CASCADE
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL ON UPDATE CASCADE
 
 ) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci
-  COMMENT='Registro inmutable append-only. ISO 27001 A.12.4. No borrar ni actualizar filas.';
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='Registro inmutable append-only. ISO 27001 A.12.4. No borrar ni actualizar filas.';

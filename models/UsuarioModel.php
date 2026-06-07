@@ -2,23 +2,23 @@
 
 class UsuarioModel
 {
-    private PDO $db;
+  private PDO $db;
 
-    public function __construct()
-    {
-        $this->db = Conexion::conectar();
-    }
+  public function __construct()
+  {
+    $this->db = Conexion::conectar();
+  }
 
-    public function buscarPorEmailHash(string $email): array|false
-    {
-        $emailHash = CifradoService::hash($email);
+  public function buscarPorEmailHash(string $email): array|false
+  {
+    $emailHash = CifradoService::hash($email);
 
-        $stmt = $this->db->prepare(
-            "SELECT id, nombre, email, password_hash, rol,
-                    login_attempts, locked_until, activo
-             FROM usuarios
-             WHERE email_hash = ? AND activo = 1
-             LIMIT 1"
+    $stmt = $this->db->prepare(
+      "SELECT id, nombre, email, password_hash, rol,
+      login_attempts, locked_until, activo
+      FROM usuarios
+      WHERE email_hash = ? AND activo = 1
+      LIMIT 1"
         );
         $stmt->execute([$emailHash]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
