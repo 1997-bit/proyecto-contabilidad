@@ -2,11 +2,11 @@
 
 class ColaboradorModel
 {
-    public function __construct(private PDO $db) {}
+  public function __construct(private PDO $db) {}
 
     public function insertar(array $d): void
     {
-        $stmt = $this->db->prepare("
+      $stmt = $this->db->prepare("
             INSERT INTO colaboradores
                 (empresa_id, nombre_completo, nombre_hash, cedula, cedula_hash,
                 estado_civil, cargo, salario_base, anio_inicio)

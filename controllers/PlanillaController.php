@@ -11,8 +11,8 @@ class PlanillaController
 
     $db = Conexion::conectar();
     $this->planillaService = new PlanillaService(new ISRService());
-    $this->planillaModel   = new PlanillaModel($db);
-    $this->cifrado         = new CifradoService();
+    $this->planillaModel = new PlanillaModel($db);
+    $this->cifrado = new CifradoService();
   }
 
   /**
@@ -30,12 +30,12 @@ class PlanillaController
     }
 
     $empresaId = (int) $_SESSION['ctx']['empresa_id'];
-    $periodo   = $_GET['periodo'] ?? '1ra_quincena';
-    $mes       = (int) ($_GET['mes'] ?? (int) date('n'));
-    $anio      = (int) ($_GET['anio'] ?? (int) date('Y'));
+    $periodo = $_GET['periodo'] ?? '1ra_quincena';
+    $mes = (int) ($_GET['mes'] ?? (int) date('n'));
+    $anio = (int) ($_GET['anio'] ?? (int) date('Y'));
 
     $errores = $_SESSION['planilla_errores'] ?? [];
-    $exito   = $_SESSION['planilla_exito'] ?? '';
+    $exito = $_SESSION['planilla_exito'] ?? '';
     unset($_SESSION['planilla_errores'], $_SESSION['planilla_exito']);
     $csrf = SessionHelper::generarCsrf();
 
@@ -45,15 +45,15 @@ class PlanillaController
     foreach ($rawColabs as $c) {
       try {
         $c['nombre_completo'] = $cifrado->descifrar($c['nombre_completo']);
-        $c['cedula']          = $cifrado->descifrar($c['cedula']);
+        $c['cedula'] = $cifrado->descifrar($c['cedula']);
       } catch (RuntimeException) {
         $c['nombre_completo'] = '[error]';
-        $c['cedula']          = '[error]';
+        $c['cedula'] = '[error]';
       }
       $colaboradores[] = $c;
     }
 
-    $filas   = [];
+    $filas = [];
     $totales = [];
     $planillaRow = $this->planillaModel->buscarPlanilla($empresaId, $periodo, $mes, $anio);
 
@@ -68,23 +68,23 @@ class PlanillaController
           $cedula = '[error]';
         }
         $filas[] = [
-          'nombre'       => $nombre,
-          'cedula'       => $cedula,
-          'cargo'        => $f['cargo'],
+          'nombre' => $nombre,
+          'cedula' => $cedula,
+          'cargo' => $f['cargo'],
           'estado_civil' => $f['estado_civil'],
-          'calc'         => [
-            'salario_base_quincena'        => (float) $f['salario_base_quincena'],
-            'otros_ingresos'               => (float) $f['otros_ingresos'],
+          'calc' => [
+            'salario_base_quincena' => (float) $f['salario_base_quincena'],
+            'otros_ingresos' => (float) $f['otros_ingresos'],
             'otros_ingresos_sin_descuento' => (float) $f['otros_ingresos_sin_descuento'],
-            'salario_bruto'                => (float) $f['salario_bruto'],
-            'desc_seguro_social'           => (float) $f['desc_seguro_social'],
-            'desc_seguro_educativo'        => (float) $f['desc_seguro_educativo'],
-            'desc_isr'                     => (float) $f['desc_isr'],
-            'otros_descuentos'             => (float) $f['otros_descuentos'],
-            'total_descuentos'             => (float) $f['total_descuentos'],
-            'salario_neto'                 => (float) $f['salario_neto'],
-            'pct_descuentos'               => $f['pct_descuentos'],
-            'alerta_desc_excede'           => (bool)  $f['alerta_desc_excede'],
+            'salario_bruto' => (float) $f['salario_bruto'],
+            'desc_seguro_social' => (float) $f['desc_seguro_social'],
+            'desc_seguro_educativo' => (float) $f['desc_seguro_educativo'],
+            'desc_isr' => (float) $f['desc_isr'],
+            'otros_descuentos' => (float) $f['otros_descuentos'],
+            'total_descuentos' => (float) $f['total_descuentos'],
+            'salario_neto' => (float) $f['salario_neto'],
+            'pct_descuentos' => $f['pct_descuentos'],
+            'alerta_desc_excede' => (bool)  $f['alerta_desc_excede'],
           ],
         ];
       }
@@ -110,11 +110,11 @@ class PlanillaController
     $salario = (float) ($_POST['salario'] ?? 0);
     $estadoCivil = $_POST['estado_civil'] ?? 'soltero';
     $otrosDesc = (float) ($_POST['otros_descuentos']?? 0);
-    $anioInicio = (int)   ($_POST['anio_inicio'] ?? date('Y'));
+    $anioInicio = (int) ($_POST['anio_inicio'] ?? date('Y'));
     $empresaId = (int) ($_SESSION['ctx']['empresa_id'] ?? 0);
     $periodo = $_POST['periodo'] ?? '1ra_quincena';
-    $mes = (int)   ($_POST['mes'] ?? (int) date('n'));
-    $anio = (int)   ($_POST['anio'] ?? (int) date('Y'));
+    $mes = (int) ($_POST['mes'] ?? (int) date('n'));
+    $anio = (int) ($_POST['anio'] ?? (int) date('Y'));
 
     $ingresos = [];
     foreach ($_POST['ing_tipo'] ?? [] as $i => $tipo) {
@@ -233,8 +233,8 @@ class PlanillaController
     unset($_SESSION['planilla_prueba']);
 
     $periodo = $_POST['periodo'] ?? '1ra_quincena';
-    $mes     = (int) ($_POST['mes']  ?? (int) date('n'));
-    $anio    = (int) ($_POST['anio'] ?? (int) date('Y'));
+    $mes = (int) ($_POST['mes']  ?? (int) date('n'));
+    $anio = (int) ($_POST['anio'] ?? (int) date('Y'));
     $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
     header('Location: ' . BASE_URL . '/planilla?' . $qs);    exit;
   }
