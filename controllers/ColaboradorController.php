@@ -10,7 +10,7 @@ class ColaboradorController
   {
     $this->db = Conexion::conectar();
     $this->cifrado = new CifradoService();
-    $this->model   = new ColaboradorModel($this->db);
+    $this->model = new ColaboradorModel($this->db);
   }
 
   public function index(): void
@@ -55,7 +55,7 @@ class ColaboradorController
       ':cedula_hash' => CifradoService::hash($valores['cedula']),
       ':estado_civil' => $valores['estado_civil'],
       ':cargo' => $valores['cargo'],
-      ':salario_base'  => (float) $valores['salario_base'],
+      ':salario_base' => (float) $valores['salario_base'],
       ':tipo_salario' => $valores['tipo_salario'],
       ':anio_inicio' => (int) $valores['anio_inicio'],
     ]);
@@ -86,9 +86,6 @@ class ColaboradorController
     elseif ($salario < Config::SALARIO_MINIMO_MES)
       $e['salario_base_aviso'] = "Aviso: $salario está bajo el mínimo legal ($" . Config::SALARIO_MINIMO_MES . "). Se guardará igual.";
 
-    if (!in_array($v['tipo_salario'], ['fijo', 'comisiones', 'dietas', 'prima_produccion'], true))
-      $e['tipo_salario'] = 'Seleccione un tipo de salario.';
-
     $anio = (int) $v['anio_inicio'];
     if ($anio < 1900 || $anio > (int) date('Y'))
       $e['anio_inicio'] = 'Año inválido.';
@@ -103,13 +100,81 @@ class ColaboradorController
     foreach ($filas as &$fila) {
       try {
         $fila['nombre_completo'] = $this->cifrado->descifrar($fila['nombre_completo']);
-        $fila['cedula']          = $this->cifrado->descifrar($fila['cedula']);
+        $fila['cedula'] = $this->cifrado->descifrar($fila['cedula']);
       } catch (RuntimeException) {
         $fila['nombre_completo'] = '[error]';
-        $fila['cedula']          = '[error]';
+        $fila['cedula'] = '[error]';
       }
     }
 
     return $filas;
+  }
+  public function editar(): void
+  {
+    SessionHelper::requerir();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: /colaborador');
+      exit;
+    }
+
+    $id = (int) ($_POST['id'] ?? 0);
+    if ($id <= 0) {
+      header('Location: /colaborador');
+      exit;
+    }
+
+    $valores = [
+      'nombre_completo' => trim($_POST['nombre_completo'] ?? ''),
+      'cedula' => trim($_POST['cedula'] ?? ''),
+      'estado_civil' => $_POST['estado_civil'] ?? '',
+      'cargo' => trim($_POST['cargo'] ?? ''),
+      'salario_base' => $_POST['salario_base'] ?? '',
+      'anio_inicio' => $_POST['anio_inicio'] ?? '',
+    ];
+
+    $errores = $this->validar($valores);
+
+    if (!empty($errores)) {
+      $colaboradores = $this->listar();
+      $editarError = $errores;
+      $editarId    = $id;
+      require BASE_PATH . '/views/colaboradores/index.php';
+      return;
+    }
+
+    $this->model->actualizar([
+      ':id' => $id,
+      ':nombre_completo' => $this->cifrado->cifrar($valores['nombre_completo']),
+      ':nombre_hash' => CifradoService::hash($valores['nombre_completo']),
+      ':cedula' => $this->cifrado->cifrar($valores['cedula']),
+      ':cedula_hash' => CifradoService::hash($valores['cedula']),
+      ':estado_civil' => $valores['estado_civil'],
+      ':cargo' => $valores['cargo'],
+      ':salario_base' => (float) $valores['salario_base'],
+      ':anio_inicio' => (int) $valores['anio_inicio'],
+    ]);
+
+    header('Location: /colaborador?ok=1');
+    exit;
+  }
+
+  public function eliminar(): void
+  {
+    SessionHelper::requerir();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: /colaborador');
+      exit;
+    }
+
+    $id = (int) ($_POST['id'] ?? 0);
+    if ($id <= 0) {
+      header('Location: /colaborador');
+      exit;
+    }
+
+    $this->model->desactivar($id);
+
+    header('Location: /colaborador?ok=1');
+    exit;
   }
 }

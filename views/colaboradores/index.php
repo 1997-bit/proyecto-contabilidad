@@ -100,11 +100,15 @@ require BASE_PATH . '/views/partials/layout_head.php';
     </table>
 </form>
 
+<input type="text" id="buscador" placeholder="Buscar por nombre o cédula..."
+       oninput="filtrarTabla()"
+       style="margin-bottom:8px;padding:4px 8px;width:260px">
+
 <h3 style="margin-top:24px">Lista de colaboradores</h3>
 <?php if (empty($colaboradores)): ?>
 <p>No hay colaboradores registrados.</p>
 <?php else: ?>
-<table>
+<table id="tabla-colaboradores">
     <thead>
         <tr>
             <th>#</th>
@@ -115,6 +119,7 @@ require BASE_PATH . '/views/partials/layout_head.php';
             <th>Salario base</th>
             <th>Tipo salario</th>
             <th>Año inicio</th>
+            <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
@@ -127,12 +132,63 @@ require BASE_PATH . '/views/partials/layout_head.php';
             <td><?= htmlspecialchars($c['cargo']) ?></td>
             <td class="num">B/. <?= number_format((float)$c['salario_base'], 2) ?></td>
             <td><?= htmlspecialchars($c['tipo_salario'] ?? '-') ?></td>
-            <?= ($valores['tipo_salario'] ?? '') === $val ? 'selected' : '' ?>
             <td><?= htmlspecialchars($c['anio_inicio']) ?></td>
+            <td style="text-align:center;white-space:nowrap">
+                <button type="button"
+                    onclick="abrirEditar(<?= $c['id'] ?>, <?= htmlspecialchars(json_encode([
+                        'nombre_completo' => $c['nombre_completo'],
+                        'cedula' => $c['cedula'],
+                        'estado_civil' => $c['estado_civil'],
+                        'cargo' => $c['cargo'],
+                        'salario_base' => $c['salario_base'],
+                        'anio_inicio' => $c['anio_inicio'],
+                    ]), ENT_QUOTES) ?>)">
+                    Editar
+                </button>
+                <button type="button" style="color:#c00"
+                    onclick="abrirEliminar(<?= $c['id'] ?>, <?= htmlspecialchars(json_encode($c['nombre_completo']), ENT_QUOTES) ?>)">
+                    Eliminar
+                </button>
+            </td>
         </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
 <?php endif; ?>
+
+<?php
+require BASE_PATH . '/views/partials/_modal_editar.php';
+require BASE_PATH . '/views/partials/_modal_eliminar.php';
+?>
+
+<script>
+function abrirEditar(id, datos) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-nombre').value = datos.nombre_completo;
+    document.getElementById('edit-cedula').value = datos.cedula;
+    document.getElementById('edit-ecivil').value = datos.estado_civil;
+    document.getElementById('edit-cargo').value = datos.cargo;
+    document.getElementById('edit-anio').value = datos.anio_inicio;
+    document.getElementById('dlg-editar').showModal();
+}
+
+function abrirEliminar(id, nombre) {
+    _nombreEliminar = nombre;
+    document.getElementById('del-id').value = id;
+    document.getElementById('del-nombre-display').textContent = nombre;
+    document.getElementById('del-confirmacion').value = '';
+    document.getElementById('btn-confirmar-eliminar').disabled = true;
+    document.getElementById('dlg-eliminar').showModal();
+}
+
+function filtrarTabla() {
+    const q = document.getElementById('buscador').value.toLowerCase();
+    document.querySelectorAll('#tabla-colaboradores tbody tr').forEach(function(fila) {
+        const nombre = fila.cells[1] ? fila.cells[1].textContent.toLowerCase() : '';
+        const cedula = fila.cells[2] ? fila.cells[2].textContent.toLowerCase() : '';
+        fila.style.display = (nombre.includes(q) || cedula.includes(q)) ? '' : 'none';
+    });
+}
+</script>
 
 <?php require BASE_PATH . '/views/partials/layout_foot.php'; ?>
