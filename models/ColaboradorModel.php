@@ -64,13 +64,13 @@ public function actualizar(array $d): void
     $stmt = $this->db->prepare("
         UPDATE colaboradores
         SET nombre_completo = :nombre_completo,
-            nombre_hash      = :nombre_hash,
-            cedula           = :cedula,
-            cedula_hash      = :cedula_hash,
-            estado_civil     = :estado_civil,
-            cargo            = :cargo,
-            salario_base     = :salario_base,
-            anio_inicio      = :anio_inicio
+            nombre_hash = :nombre_hash,
+            cedula = :cedula,
+            cedula_hash = :cedula_hash,
+            estado_civil = :estado_civil,
+            cargo = :cargo,
+            salario_base = :salario_base,
+            anio_inicio = :anio_inicio
         WHERE id = :id
     ");
     $stmt->execute($d);
