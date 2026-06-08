@@ -100,11 +100,15 @@ require BASE_PATH . '/views/partials/layout_head.php';
     </table>
 </form>
 
+<input type="text" id="buscador" placeholder="Buscar por nombre o cédula..."
+       oninput="filtrarTabla()"
+       style="margin-bottom:8px;padding:4px 8px;width:260px">
+
 <h3 style="margin-top:24px">Lista de colaboradores</h3>
 <?php if (empty($colaboradores)): ?>
 <p>No hay colaboradores registrados.</p>
 <?php else: ?>
-<table>
+<table id="tabla-colaboradores">
     <thead>
         <tr>
             <th>#</th>
@@ -175,6 +179,15 @@ function abrirEliminar(id, nombre) {
     document.getElementById('del-confirmacion').value = '';
     document.getElementById('btn-confirmar-eliminar').disabled = true;
     document.getElementById('dlg-eliminar').showModal();
+}
+
+function filtrarTabla() {
+    const q = document.getElementById('buscador').value.toLowerCase();
+    document.querySelectorAll('#tabla-colaboradores tbody tr').forEach(function(fila) {
+        const nombre = fila.cells[1] ? fila.cells[1].textContent.toLowerCase() : '';
+        const cedula = fila.cells[2] ? fila.cells[2].textContent.toLowerCase() : '';
+        fila.style.display = (nombre.includes(q) || cedula.includes(q)) ? '' : 'none';
+    });
 }
 </script>
 
