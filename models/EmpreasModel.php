@@ -36,13 +36,13 @@ class EmpresaModel
         $d[':id'] = $id;
         $stmt = $this->db->prepare("
             UPDATE empresas SET
-                nombre          = :nombre,
-                ruc             = :ruc,
-                region          = :region,
+                nombre = :nombre,
+                ruc = :ruc,
+                region = :region,
                 horas_semanales = :horas_semanales,
-                semanas_mes     = :semanas_mes,
-                clase_riesgo    = :clase_riesgo,
-                grado_riesgo    = :grado_riesgo
+                semanas_mes = :semanas_mes,
+                clase_riesgo = :clase_riesgo,
+                grado_riesgo = :grado_riesgo
             WHERE id = :id
         ");
         $stmt->execute($d);

@@ -72,20 +72,7 @@ require BASE_PATH . '/views/partials/layout_head.php';
                 <?php endif; ?>
             </td>
         </tr>
-        <tr>
-            <td><label for="tipo_salario">Tipo de salario</label></td>
-            <td>
-                <select id="tipo_salario" name="tipo_salario">
-                    <?php foreach (['fijo' => 'Fijo', 'comisiones' => 'Comisiones', 'dietas' => 'Dietas', 'prima_produccion' => 'Prima de produccion'] as $val => $label): ?>
-                    <option value="<?= $val ?>"
-                        <?= ($valores['tipo_salario'] ?? '') === $val ? 'selected' : '' ?>>
-                        <?= $label ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </td>
-        </tr>
-        <tr>
+         <tr>
             <td><label for="anio_inicio">Año de inicio</label></td>
             <td>
                 <input type="number" id="anio_inicio" name="anio_inicio"
@@ -117,7 +104,6 @@ require BASE_PATH . '/views/partials/layout_head.php';
             <th>Estado civil</th>
             <th>Cargo</th>
             <th>Salario base</th>
-            <th>Tipo salario</th>
             <th>Año inicio</th>
             <th>Acciones</th>
         </tr>
@@ -131,7 +117,6 @@ require BASE_PATH . '/views/partials/layout_head.php';
             <td><?= htmlspecialchars($c['estado_civil']) ?></td>
             <td><?= htmlspecialchars($c['cargo']) ?></td>
             <td class="num">B/. <?= number_format((float)$c['salario_base'], 2) ?></td>
-            <td><?= htmlspecialchars($c['tipo_salario'] ?? '-') ?></td>
             <td><?= htmlspecialchars($c['anio_inicio']) ?></td>
             <td style="text-align:center;white-space:nowrap">
                 <button type="button"
