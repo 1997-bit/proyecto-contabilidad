@@ -113,7 +113,8 @@ class PlanillaService
       $monto = (float) ($ingreso['monto'] ?? 0);
 
       $resultado = match($tipo) {
-        'horas_extra', 'comision', 'bonificacion' => $this->calcularComision($monto),
+        'comision', 'bonificacion' => $this->calcularComision($monto),
+        'horas_extra' => ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0],
         'dietas' => $this->calcularConExencion($monto, $salMensual * Config::DIETAS_EXENCION),
         'prima' => $this->calcularConExencion($monto, $salMensual * Config::PRIMA_EXENCION),
         default => ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0],
@@ -138,13 +139,6 @@ class PlanillaService
       'excedente_css' => $this->redondear($excedenteCSS,      2),
       'detalle' => $detalle,
     ];
-  }
-
-  /** Horas extra: monto calculado desde horas * valorHora * recargo */
-  private function calcularHorasExtra(array $ingreso, float $valorHora): array
-  {
-    $monto = (float) ($ingreso['monto'] ?? 0);
-    return ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0];
   }
 
   /** Comisión: gravable 100% */

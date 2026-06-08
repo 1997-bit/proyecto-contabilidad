@@ -2,15 +2,32 @@
 
 class ColaboradorController
 {
-    private PDO $db;
-    private CifradoService $cifrado;
-    private ColaboradorModel $model;
+  private PDO $db;
+  private CifradoService $cifrado;
+  private ColaboradorModel $model;
 
-    public function __construct()
-    {
-        $this->db = Conexion::conectar();
-        $this->cifrado = new CifradoService();
-        $this->model   = new ColaboradorModel($this->db);
+  public function __construct()
+  {
+    $this->db = Conexion::conectar();
+    $this->cifrado = new CifradoService();
+    $this->model   = new ColaboradorModel($this->db);
+  }
+
+  public function index(): void
+  {
+    SessionHelper::requerir();
+    $colaboradores = $this->listar();
+    $errores = [];
+    $valores = [];
+    require BASE_PATH . '/views/colaboradores/index.php';
+  }
+
+  public function guardar(): void
+  {
+    SessionHelper::requerir();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      header('Location: /colaborador');
+      exit;
     }
 
     public function index(): void

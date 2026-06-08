@@ -49,7 +49,7 @@ class Config
   public const ISR_TRAMO3_BASE = 5850.00;
   public const ISR_TRAMO3_TASA = 0.25;
   public const ISR_DEDUCCION_E = 800.00;  // casado/unido
- 
+
   // Prestaciones
   public const DECIMO_PCT = 0.083333; // 1/12
   public const VACACIONES_PCT = 0.090909; // 1/11
