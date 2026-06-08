@@ -90,8 +90,8 @@ class LoginController
     }
 
     // Login exitoso
-    SessionHelper::set('usuario_id',     $usuario['id']);
-    SessionHelper::set('usuario_rol',    $usuario['rol']);
+    SessionHelper::set('usuario_id', $usuario['id']);
+    SessionHelper::set('usuario_rol', $usuario['rol']);
     SessionHelper::set('usuario_nombre', $usuario['nombre_plain']);
 
     session_regenerate_id(true);

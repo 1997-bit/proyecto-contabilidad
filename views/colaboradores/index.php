@@ -133,11 +133,11 @@ require BASE_PATH . '/views/partials/layout_head.php';
                 <button type="button"
                     onclick="abrirEditar(<?= $c['id'] ?>, <?= htmlspecialchars(json_encode([
                         'nombre_completo' => $c['nombre_completo'],
-                        'cedula'          => $c['cedula'],
-                        'estado_civil'    => $c['estado_civil'],
-                        'cargo'           => $c['cargo'],
-                        'salario_base'    => $c['salario_base'],
-                        'anio_inicio'     => $c['anio_inicio'],
+                        'cedula' => $c['cedula'],
+                        'estado_civil' => $c['estado_civil'],
+                        'cargo' => $c['cargo'],
+                        'salario_base' => $c['salario_base'],
+                        'anio_inicio' => $c['anio_inicio'],
                     ]), ENT_QUOTES) ?>)">
                     Editar
                 </button>
@@ -159,20 +159,20 @@ require BASE_PATH . '/views/partials/_modal_eliminar.php';
 
 <script>
 function abrirEditar(id, datos) {
-    document.getElementById('edit-id').value          = id;
-    document.getElementById('edit-nombre').value      = datos.nombre_completo;
-    document.getElementById('edit-cedula').value      = datos.cedula;
-    document.getElementById('edit-ecivil').value      = datos.estado_civil;
-    document.getElementById('edit-cargo').value       = datos.cargo;
-    document.getElementById('edit-anio').value        = datos.anio_inicio;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-nombre').value = datos.nombre_completo;
+    document.getElementById('edit-cedula').value = datos.cedula;
+    document.getElementById('edit-ecivil').value = datos.estado_civil;
+    document.getElementById('edit-cargo').value = datos.cargo;
+    document.getElementById('edit-anio').value = datos.anio_inicio;
     document.getElementById('dlg-editar').showModal();
 }
 
 function abrirEliminar(id, nombre) {
     _nombreEliminar = nombre;
-    document.getElementById('del-id').value               = id;
+    document.getElementById('del-id').value = id;
     document.getElementById('del-nombre-display').textContent = nombre;
-    document.getElementById('del-confirmacion').value     = '';
+    document.getElementById('del-confirmacion').value = '';
     document.getElementById('btn-confirmar-eliminar').disabled = true;
     document.getElementById('dlg-eliminar').showModal();
 }

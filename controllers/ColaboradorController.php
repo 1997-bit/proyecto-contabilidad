@@ -10,7 +10,7 @@ class ColaboradorController
   {
     $this->db = Conexion::conectar();
     $this->cifrado = new CifradoService();
-    $this->model   = new ColaboradorModel($this->db);
+    $this->model = new ColaboradorModel($this->db);
   }
 
   public function index(): void
@@ -55,7 +55,7 @@ class ColaboradorController
       ':cedula_hash' => CifradoService::hash($valores['cedula']),
       ':estado_civil' => $valores['estado_civil'],
       ':cargo' => $valores['cargo'],
-      ':salario_base'  => (float) $valores['salario_base'],
+      ':salario_base' => (float) $valores['salario_base'],
       ':tipo_salario' => $valores['tipo_salario'],
       ':anio_inicio' => (int) $valores['anio_inicio'],
     ]);
@@ -100,10 +100,10 @@ class ColaboradorController
     foreach ($filas as &$fila) {
       try {
         $fila['nombre_completo'] = $this->cifrado->descifrar($fila['nombre_completo']);
-        $fila['cedula']          = $this->cifrado->descifrar($fila['cedula']);
+        $fila['cedula'] = $this->cifrado->descifrar($fila['cedula']);
       } catch (RuntimeException) {
         $fila['nombre_completo'] = '[error]';
-        $fila['cedula']          = '[error]';
+        $fila['cedula'] = '[error]';
       }
     }
 
@@ -125,11 +125,11 @@ class ColaboradorController
 
     $valores = [
       'nombre_completo' => trim($_POST['nombre_completo'] ?? ''),
-      'cedula'          => trim($_POST['cedula'] ?? ''),
-      'estado_civil'    => $_POST['estado_civil'] ?? '',
-      'cargo'           => trim($_POST['cargo'] ?? ''),
-      'salario_base'    => $_POST['salario_base'] ?? '',
-      'anio_inicio'     => $_POST['anio_inicio'] ?? '',
+      'cedula' => trim($_POST['cedula'] ?? ''),
+      'estado_civil' => $_POST['estado_civil'] ?? '',
+      'cargo' => trim($_POST['cargo'] ?? ''),
+      'salario_base' => $_POST['salario_base'] ?? '',
+      'anio_inicio' => $_POST['anio_inicio'] ?? '',
     ];
 
     $errores = $this->validar($valores);
@@ -143,15 +143,15 @@ class ColaboradorController
     }
 
     $this->model->actualizar([
-      ':id'              => $id,
+      ':id' => $id,
       ':nombre_completo' => $this->cifrado->cifrar($valores['nombre_completo']),
-      ':nombre_hash'     => CifradoService::hash($valores['nombre_completo']),
-      ':cedula'          => $this->cifrado->cifrar($valores['cedula']),
-      ':cedula_hash'     => CifradoService::hash($valores['cedula']),
-      ':estado_civil'    => $valores['estado_civil'],
-      ':cargo'           => $valores['cargo'],
-      ':salario_base'    => (float) $valores['salario_base'],
-      ':anio_inicio'     => (int) $valores['anio_inicio'],
+      ':nombre_hash' => CifradoService::hash($valores['nombre_completo']),
+      ':cedula' => $this->cifrado->cifrar($valores['cedula']),
+      ':cedula_hash' => CifradoService::hash($valores['cedula']),
+      ':estado_civil' => $valores['estado_civil'],
+      ':cargo' => $valores['cargo'],
+      ':salario_base' => (float) $valores['salario_base'],
+      ':anio_inicio' => (int) $valores['anio_inicio'],
     ]);
 
     header('Location: /colaborador?ok=1');
