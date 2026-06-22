@@ -1,5 +1,5 @@
-
 <?php
+define('BASE_URL', 'http://localhost/proyecto-contabilidad/public');
 class Config
 {
   public static function cargarEnv(string $path): void
