@@ -9,8 +9,10 @@
 				box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 			}
 
-			dialog::backdrop {
-				background: rgba(0, 0, 0, 0.45);
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(1px);
+        -webkit-backdrop-filter: blur(4px);
 			}
 			body {
 				font-family: Arial, sans-serif;
