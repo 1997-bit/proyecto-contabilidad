@@ -13,15 +13,20 @@ class RegisterController
 
   private function guardar(): void
   {
+    if (!SessionHelper::verificarCsrf($_POST['csrf_token'] ?? '')) {
+      $error = 'Token inválido. Recarga la página e intenta de nuevo.';
+      require BASE_PATH . '/views/register/register.php';
+      return;
+    }
+
     $nombre = trim($_POST['nombre']   ?? '');
     $email = trim($_POST['email']    ?? '');
     $password = trim($_POST['password'] ?? '');
-    $rol = trim($_POST['rol']      ?? 'visor');
+    $rol = 'visor'; // registro público siempre crea usuarios visor; escalar rol requiere un admin
 
     // Validación básica
-    $rolesValidos = ['admin', 'contador', 'visor'];
-    if (empty($nombre) || empty($email) || empty($password) || !in_array($rol, $rolesValidos)) {
-      $error = 'Todos los campos son requeridos y el rol debe ser válido.';
+    if (empty($nombre) || empty($email) || empty($password)) {
+      $error = 'Todos los campos son requeridos.';
       require BASE_PATH . '/views/register/register.php';
       return;
     }

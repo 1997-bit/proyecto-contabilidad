@@ -30,7 +30,7 @@ class Router
   {
     http_response_code(404);
     $vista = BASE_PATH . '/views/404.PHP';
-    file_exists($vista) ? require $vista : print('<h1>404 — Página no encontrada</h1>');
+    file_exists($vista) ? require $vista : print('<h1>Error 404: página no encontrada</h1>');
     exit;
   }
 }

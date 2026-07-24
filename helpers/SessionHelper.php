@@ -30,7 +30,7 @@ class SessionHelper
     session_destroy();
   }
 
-  public static function requerir(string $rol = null): void
+  public static function requerir(?string $rol = null): void
   {
     self::iniciar();
 
@@ -57,6 +57,60 @@ class SessionHelper
   {
     return isset($_SESSION['csrf_token'])
       && hash_equals($_SESSION['csrf_token'], $token);
+  }
+
+  /**
+   * Corta la petición si no es POST, redirigiendo a $redirectUrl.
+   */
+  public static function exigirPost(string $redirectUrl): void
+  {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+      header('Location: ' . $redirectUrl);
+      exit;
+    }
+  }
+
+  /**
+   * Corta la petición si el CSRF de $_POST no es válido, redirigiendo a $redirectUrl.
+   * Si $flashKey se indica, deja un mensaje de error flash con esa clave.
+   */
+  public static function exigirCsrf(string $redirectUrl, ?string $flashKey = null): void
+  {
+    if (!self::verificarCsrf($_POST['csrf_token'] ?? '')) {
+      if ($flashKey !== null) {
+        self::flash($flashKey, ['Token inválido. Recarga la página e intenta de nuevo.']);
+      }
+      header('Location: ' . $redirectUrl);
+      exit;
+    }
+  }
+
+  /**
+   * Indica si $empresaId corresponde a una de las empresas dadas.
+   */
+  public static function empresaIdValida(int $empresaId, array $empresas): bool
+  {
+    foreach ($empresas as $e) {
+      if ((int) $e['id'] === $empresaId) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Resuelve la empresa activa: GET > contexto de sesión > primera empresa disponible.
+   * Solo devuelve un id que exista realmente en $empresas (evita confiar en un
+   * empresa_id de sesión desactualizado que ya no exista).
+   */
+  public static function empresaIdActiva(array $empresas): int
+  {
+    $empresaId = (int) ($_GET['empresa_id'] ?? 0);
+    if (!self::empresaIdValida($empresaId, $empresas)) {
+      $empresaId = (int) ($_SESSION['ctx']['empresa_id'] ?? 0);
+    }
+    if (!self::empresaIdValida($empresaId, $empresas) && !empty($empresas)) {
+      $empresaId = (int) $empresas[0]['id'];
+    }
+    return $empresaId;
   }
   public static function flash(string $key, mixed $val): void
   {

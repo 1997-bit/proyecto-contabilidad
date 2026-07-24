@@ -39,7 +39,7 @@ classDiagram
         -redondear(valor: float, decimales: int): float
         +calcularQuincena(colaborador: array, extras: array): array
         -procesarIngresos(ingresos: array, salMensual: float, valorHora: float): array
-        -calcularHorasExtra(ingreso: array, valorHora: float): array
+        -calcularHorasExtra(horas: float, valorHora: float, recargo: float): array
         -calcularComision(monto: float): array
         -calcularConExencion(monto: float, umbral: float): array
     }
@@ -59,7 +59,7 @@ flowchart TD
     B --> C["procesarIngresos por tipo"]
 
     C --> C1{Tipo ingreso}
-    C1 -->|horas_extra| C2["monto directo, 100% gravable. horas = referencia BD"]
+    C1 -->|horas_extra_diurna/nocturna/dominical| C2["monto = horas x valorHora x recargo (1.25/1.50/1.75). 100% gravable"]
     C1 -->|comision| C3["100% gravable"]
     C1 -->|dietas| C4["exento hasta 25% sal. mensual, excedente gravable + CSS"]
     C1 -->|prima| C5["exento hasta 50% sal. mensual, excedente gravable + CSS"]
@@ -85,13 +85,15 @@ flowchart TD
 
 ## Tipos de ingreso
 
-| Tipo           | Base gravable                    | Exención               | CSS aplica sobre |
-| -------------- | -------------------------------- | ---------------------- | ---------------- |
-| `horas_extra`  | 100%                             | -                      | monto completo   |
-| `comision`     | 100%                             | -                      | monto completo   |
-| `dietas`       | excedente sobre 25% sal. mensual | hasta 25% sal. mensual | excedente        |
-| `prima`        | excedente sobre 50% sal. mensual | hasta 50% sal. mensual | excedente        |
-| `bonificacion` | 100%                             | -                      | monto completo   |
+| Tipo                    | Base gravable                     | Exención               | CSS aplica sobre |
+| ----------------------- | ---------------------------------- | ---------------------- | ---------------- |
+| `horas_extra_diurna`    | 100% (horas x valorHora x 1.25)    | -                      | monto completo   |
+| `horas_extra_nocturna`  | 100% (horas x valorHora x 1.50)    | -                      | monto completo   |
+| `horas_extra_dominical` | 100% (horas x valorHora x 1.75)    | -                      | monto completo   |
+| `comision`              | 100%                                | -                      | monto completo   |
+| `dietas`                | excedente sobre 25% sal. mensual   | hasta 25% sal. mensual | excedente        |
+| `prima`                 | excedente sobre 50% sal. mensual   | hasta 50% sal. mensual | excedente        |
+| `bonificacion`          | 100%                                | -                      | monto completo   |
 
 ---
 

@@ -1,49 +1,48 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/register.css">
-    <title>Registro</title>
-</head>
-<body>
+<?php declare(strict_types=1);
+$pageTitle = 'Registro';
+require BASE_PATH . '/views/partials/layout_head.php';
+?>
+<h2>Crear usuario</h2>
 
-    <div class="Registrohtml">
+<?php if (!empty($error)): ?>
+<div class="error"><p><?= Icons::svg('alert-triangle') ?> <?= htmlspecialchars($error) ?></p></div>
+<?php endif; ?>
 
-    <h2>Crear usuario</h2>
+<?php if (!empty($exito)): ?>
+<p class="ok"><?= Icons::svg('check-circle') ?> <?= $exito ?></p>
+<?php endif; ?>
 
-    <?php if (!empty($error)): ?>
-        <p class="msg-error" style="color:red;"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
+<form method="POST" action="<?= BASE_URL ?>/register" class="form-narrow">
+    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
 
-    <?php if (!empty($exito)): ?>
-        <p class="msg-exito" style="color:green;"><?= $exito ?></p>
-    <?php endif; ?>
-
-    <form method="POST" action="http://localhost/proyecto-contabilidad/public/register">
-        <label>Nombre<br>
-            <input type="text" name="nombre" required
+    <div class="form-row">
+        <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" required
                    value="<?= htmlspecialchars($_POST['nombre'] ?? '') ?>">
-        </label>
-        <br><br>
-        <label>Email<br>
-            <input type="email" name="email" required
-                   value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-        </label>
-        <br><br>
-        <label>Contraseña<br>
-            <input type="password" name="password" required>
-        </label>
-        <br><br>
-        <label>Rol<br>
-            <select name="rol">
-                <option value="visor">Visor</option>
-                <option value="contador">Contador</option>
-                <option value="admin">Admin</option>
-            </select>
-        </label>
-        <br><br>
-        <button type="submit">Crear usuario</button>
-    </form>
-</div>
+        </div>
+    </div>
 
-</body>
-</html>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required
+                   value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit"><?= Icons::svg('plus') ?> Crear usuario</button>
+    </div>
+</form>
+
+<p>¿Ya tienes cuenta? <a href="<?= BASE_URL ?>/login">Inicia sesión</a></p>
+
+<?php require BASE_PATH . '/views/partials/layout_foot.php'; ?>

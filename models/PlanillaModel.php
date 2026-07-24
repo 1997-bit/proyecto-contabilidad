@@ -216,6 +216,28 @@ public function listarColaboradoresActivos(int $empresaId): array
     $stmt->execute([':eid' => $empresaId]);
     return $stmt->fetchAll();
 }
+public function listarDetallePorColaborador(int $colaboradorId): array
+{
+    $stmt = $this->db->prepare("
+        SELECT
+            p.periodo,
+            p.mes,
+            p.anio,
+            d.salario_bruto,
+            d.desc_seguro_social,
+            d.desc_seguro_educativo,
+            d.desc_isr,
+            d.otros_descuentos,
+            d.salario_neto
+        FROM detalle_planilla d
+        JOIN planillas p ON p.id = d.id_planilla
+        WHERE d.id_colaborador = :cid
+        ORDER BY p.anio ASC, p.mes ASC, p.periodo ASC
+    ");
+    $stmt->execute([':cid' => $colaboradorId]);
+    return $stmt->fetchAll();
+}
+
 public function listarDetallePlanilla(int $planillaId): array
 {
     $stmt = $this->db->prepare("

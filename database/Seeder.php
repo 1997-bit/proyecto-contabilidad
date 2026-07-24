@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /*
- * Seeder - Grupo examen (1-4)
+ * Seeder: Grupo examen (1 a 4)
  * Uso: php database/grupos-seed.php [grupo]
  */
 

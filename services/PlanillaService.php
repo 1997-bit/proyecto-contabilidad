@@ -23,7 +23,9 @@ class PlanillaService
    * Tipos de ingreso soportados:
    *   'bonificacion' -> gravable 100%, CSS completo. Art.140 CT.
    *   'comision' -> gravable 100%, CSS completo.
-   *   'horas_extra' -> gravable 100%, CSS completo. Monto directo + horas como referencia.
+   *   'horas_extra_diurna' -> gravable 100%, CSS completo. monto = horas * valorHora * 1.25 (Art. 33 CT).
+   *   'horas_extra_nocturna' -> gravable 100%, CSS completo. monto = horas * valorHora * 1.50 (Art. 33 CT).
+   *   'horas_extra_dominical' -> gravable 100%, CSS completo. monto = horas * valorHora * 1.75 (Art. 33 CT).
    *   'dietas' -> exento hasta 25% salario mensual, excedente gravable + CSS.
    *   'prima' -> exento hasta 50% salario mensual, excedente gravable + CSS.
    */
@@ -111,10 +113,13 @@ class PlanillaService
     foreach ($ingresos as $ingreso) {
       $tipo = $ingreso['tipo'] ?? '';
       $monto = (float) ($ingreso['monto'] ?? 0);
+      $horas = (float) ($ingreso['horas'] ?? 0);
 
       $resultado = match($tipo) {
         'comision', 'bonificacion' => $this->calcularComision($monto),
-        'horas_extra' => ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0],
+        'horas_extra_diurna' => $this->calcularHorasExtra($horas, $valorHora, Config::RECARGO_DIURNO),
+        'horas_extra_nocturna' => $this->calcularHorasExtra($horas, $valorHora, Config::RECARGO_NOCTURNO),
+        'horas_extra_dominical' => $this->calcularHorasExtra($horas, $valorHora, Config::RECARGO_DOMINICAL),
         'dietas' => $this->calcularConExencion($monto, $salMensual * Config::DIETAS_EXENCION),
         'prima' => $this->calcularConExencion($monto, $salMensual * Config::PRIMA_EXENCION),
         default => ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0],
@@ -126,11 +131,11 @@ class PlanillaService
 
       $detalle[] = [
         'tipo' => $tipo,
-        'monto' => $monto,
+        'monto' => $this->redondear($resultado['gravable'] + $resultado['sin_descuento'], 2),
         'gravable' => $this->redondear($resultado['gravable'],      2),
         'sin_descuento' => $this->redondear($resultado['sin_descuento'], 2),
         'horas' => $ingreso['horas'] ?? null,  // se guarda en BD, no afecta calculo
-      ];   
+      ];
     }
 
     return [
@@ -144,6 +149,16 @@ class PlanillaService
   /** Comisión: gravable 100% */
   private function calcularComision(float $monto): array
   {
+    return ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0];
+  }
+
+  /**
+   * Horas extra: monto = horas * valorHora * recargo legal (Art. 33 CT).
+   * 100% gravable, sin exención CSS, igual que el resto de ingresos variables.
+   */
+  private function calcularHorasExtra(float $horas, float $valorHora, float $recargo): array
+  {
+    $monto = $this->redondear($horas * $valorHora * $recargo, 2);
     return ['gravable' => $monto, 'sin_descuento' => 0.0, 'excedente_css' => 0.0];
   }
 

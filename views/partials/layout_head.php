@@ -3,6 +3,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $pageTitle ?? 'Próspera' ?></title>
     <style>
         * {
@@ -77,6 +78,17 @@
             padding: 24px;
         }
 
+        /* Ritmo vertical: separacion consistente entre bloques de nivel superior,
+           tanto en el contenido principal como dentro de los modales. */
+        .contenido > * + *,
+        dialog > * + * {
+            margin-top: 16px;
+        }
+
+        p {
+            margin-bottom: 8px;
+        }
+
         h2 {
             color: #1a2f5e;
             margin-bottom: 12px;
@@ -113,7 +125,29 @@
             font-weight: bold;
         }
 
+        .warning {
+            color: #b25f00;
+            font-weight: bold;
+        }
+
+        /* ICONOS */
+        .icon {
+            vertical-align: -3px;
+            margin-right: 4px;
+            flex-shrink: 0;
+        }
+
+        button .icon,
+        a .icon {
+            margin-right: 5px;
+        }
+
         /* TABLA */
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
@@ -200,10 +234,42 @@
             padding: 0 6px;
         }
 
-        label {
-            display: inline-block;
-            width: 170px;
+        /* FORM SYSTEM */
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 200px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
             color: #1a2f5e;
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .form-narrow {
+            max-width: 360px;
         }
 
         input[type="text"],
@@ -240,13 +306,39 @@
             background-color: #2e9e88;
         }
 
+        .btn-secondary {
+            background: transparent;
+            color: #1a2f5e;
+            border: 1px solid #a8d5cc;
+        }
+
+        .btn-secondary:hover {
+            background: #e8f5f3;
+        }
+
+        .btn-danger {
+            background-color: #c62828;
+        }
+
+        .btn-danger:hover {
+            background-color: #a81f1f;
+        }
+
         /* DIALOG */
         dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
             border: none;
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.2);
             min-width: 300px;
+            max-width: min(90vw, 640px);
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
         dialog::backdrop {
@@ -255,5 +347,8 @@
     </style>
 </head>
 <body>
-<?php require BASE_PATH . '/views/partials/navbar.php'; ?>
+<?php
+$csrf = SessionHelper::generarCsrf();
+require BASE_PATH . '/views/partials/navbar.php';
+?>
 <div class="contenido">

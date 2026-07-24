@@ -6,15 +6,15 @@ require BASE_PATH . '/views/partials/layout_head.php';
 
 <div class="cards">
     <div class="card">
-        <a href="<?= BASE_URL ?>/reporte/personal">Reporte P</a>
+        <a href="<?= BASE_URL ?>/reporte/personal"><?= Icons::svg('bar-chart') ?> Reporte P</a>
         <p>Planilla grupal de colaboradores.</p>
     </div>
     <div class="card">
-        <a href="<?= BASE_URL ?>/reporte/expediente">Reporte E</a>
+        <a href="<?= BASE_URL ?>/reporte/expediente"><?= Icons::svg('file') ?> Reporte E</a>
         <p>Expediente individual por colaborador.</p>
     </div>
     <div class="card">
-        <a href="<?= BASE_URL ?>/reporte/css">Reporte C</a>
+        <a href="<?= BASE_URL ?>/reporte/css"><?= Icons::svg('shield') ?> Reporte C</a>
         <p>Informe Caja de Seguro Social.</p>
     </div>
 </div>
