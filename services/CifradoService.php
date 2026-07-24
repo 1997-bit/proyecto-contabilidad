@@ -73,6 +73,18 @@ class CifradoService
   }
 
   /**
+   * Descifra devolviendo un valor de respaldo si el dato está corrupto o la clave no coincide.
+   */
+  public function descifrarConFallback(string $binario, string $fallback = '[error]'): string
+  {
+    try {
+      return $this->descifrar($binario);
+    } catch (RuntimeException) {
+      return $fallback;
+    }
+  }
+
+  /**
    * Hash SHA-256 determinístico para búsquedas (no reversible).
    */
   public static function hash(string $valor): string

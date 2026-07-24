@@ -7,13 +7,13 @@ require BASE_PATH . '/views/partials/layout_head.php';
 <?php if (!empty($errores)): ?>
 <div class="error">
     <?php foreach ($errores as $e): ?>
-    <p><?= htmlspecialchars($e) ?></p>
+    <p><?= Icons::svg('alert-triangle') ?> <?= htmlspecialchars($e) ?></p>
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($exito)): ?>
-<p class="ok"><?= htmlspecialchars($exito) ?></p>
+<p class="ok"><?= Icons::svg('check-circle') ?> <?= htmlspecialchars($exito) ?></p>
 <?php endif; ?>
 
 <fieldset>
@@ -21,38 +21,56 @@ require BASE_PATH . '/views/partials/layout_head.php';
     <?php if (!empty($_SESSION['ctx'])): ?>
     <p>Activa: <strong><?= htmlspecialchars($_SESSION['ctx']['empresa']) ?></strong></p>
     <?php else: ?>
-    <p class="error">Sin empresa seleccionada.</p>
+    <p class="error"><?= Icons::svg('alert-triangle') ?> Sin empresa seleccionada.</p>
     <?php endif; ?>
     <form method="POST" action="<?= BASE_URL ?>/settings/seleccionar">
-        <select name="empresa_id" required>
-            <option value="">-- seleccionar --</option>
-            <?php foreach ($empresas as $e): ?>
-            <?php if (!$e['activo']) continue; ?>
-            <option value="<?= $e['id'] ?>" <?= ($empresaActiva === (int)$e['id']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($e['nombre']) ?>
-            </option>
-            <?php endforeach; ?>
-        </select>
-        <button type="submit">Activar</button>
+        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="empresa_id">Empresa</label>
+                <select id="empresa_id" name="empresa_id" required>
+                    <option value="">-- seleccionar --</option>
+                    <?php foreach ($empresas as $e): ?>
+                    <?php if (!$e['activo']) continue; ?>
+                    <option value="<?= $e['id'] ?>" <?= ($empresaActiva === (int)$e['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($e['nombre']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit"><?= Icons::svg('check-circle') ?> Activar</button>
+        </div>
     </form>
 </fieldset>
 
-<fieldset style="margin-top:16px">
+<fieldset>
     <legend>Nueva empresa</legend>
     <form method="POST" action="<?= BASE_URL ?>/settings/crearEmpresa">
-        <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" name="nombre" required><br>
-        <label for="ruc">RUC:</label>
-        <input type="text" id="ruc" name="ruc" placeholder="123-456-1-2023"><br>
-        <button type="submit">Crear</button>
+        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="ruc">RUC</label>
+                <input type="text" id="ruc" name="ruc" placeholder="123-456-1-2023">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit"><?= Icons::svg('plus') ?> Crear</button>
+        </div>
     </form>
 </fieldset>
 
-<fieldset style="margin-top:16px">
+<fieldset>
     <legend>Empresas registradas</legend>
     <?php if (empty($empresas)): ?>
     <p>Sin empresas.</p>
     <?php else: ?>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
@@ -69,14 +87,15 @@ require BASE_PATH . '/views/partials/layout_head.php';
                 <td><?= $i + 1 ?></td>
                 <td><?= htmlspecialchars($e['nombre']) ?></td>
                 <td><?= htmlspecialchars($e['ruc'] ?? '-') ?></td>
-                <td><?= $e['activo'] ? 'Activa' : 'Inactiva' ?></td>
+                <td><?= $e['activo'] ? Icons::svg('check-circle') . ' Activa' : Icons::svg('x-circle') . ' Inactiva' ?></td>
                 <td>
                     <?php if ($e['activo']): ?>
                     <form method="POST" action="<?= BASE_URL ?>/settings/desactivarEmpresa"
                         style="display:inline"
                         onsubmit="return confirm('Desactivar <?= htmlspecialchars($e['nombre']) ?>?')">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                         <input type="hidden" name="empresa_id" value="<?= $e['id'] ?>">
-                        <button type="submit">Desactivar</button>
+                        <button type="submit" class="btn-danger"><?= Icons::svg('trash') ?> Desactivar</button>
                     </form>
                     <?php else: ?>
                     <span style="color:#aaa">Inactiva</span>
@@ -86,6 +105,7 @@ require BASE_PATH . '/views/partials/layout_head.php';
         <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
     <?php endif; ?>
 </fieldset>
 

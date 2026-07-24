@@ -1,4 +1,4 @@
-# Kanban — Proyecto Contabilidad
+# Kanban: Proyecto Contabilidad
 
 ```mermaid
 ---
@@ -17,9 +17,9 @@ kanban
     id7[Deducciones del empleado]@{ ticket: 7, priority: 'Very High' }
     id8[Cargas patronales]@{ ticket: 8, priority: 'Very High' }
     id9[Pantalla de selección de reportes]@{ ticket: 9, priority: 'Very High' }
-    id10[Reporte P — grupal de colaboradores]@{ ticket: 10 }
-    id11[Reporte E — individual / expediente]@{ ticket: 11, priority: 'Very High' }
-    id12[Reporte C — Caja de Seguro Social]@{ ticket: 12, priority: 'Very High' }
+    id10[Reporte P: grupal de colaboradores]@{ ticket: 10 }
+    id11[Reporte E: individual, expediente]@{ ticket: 11, priority: 'Very High' }
+    id12[Reporte C: Caja de Seguro Social]@{ ticket: 12, priority: 'Very High' }
     id13[Imprimir y enviar por correo en todos los reportes]@{ ticket: 13, priority: 'Very High' }
     id14[Verificación final de números]@{ ticket: 14 }
 ```

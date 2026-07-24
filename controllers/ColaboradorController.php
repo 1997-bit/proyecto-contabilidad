@@ -25,15 +25,8 @@ class ColaboradorController
   public function guardar(): void
   {
     SessionHelper::requerir();
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      header('Location: /colaborador');
-      exit;
-    }
-
-    if (!SessionHelper::verificarCsrf($_POST['csrf_token'] ?? '')) {
-      header('Location: /colaborador');
-      exit;
-    }
+    SessionHelper::exigirPost('/colaborador');
+    SessionHelper::exigirCsrf('/colaborador');
 
     $valores = [
       'nombre_completo' => trim($_POST['nombre_completo'] ?? ''),
@@ -47,8 +40,7 @@ class ColaboradorController
     $errores = $this->validar($valores);
 
     if (!empty($errores)) {
-      $colaboradores = $this->listar();
-      require BASE_PATH . '/views/colaboradores/index.php';
+      $this->renderConError($errores, $valores);
       return;
     }
 
@@ -67,8 +59,7 @@ class ColaboradorController
     } catch (PDOException $e) {
       if ($e->getCode() === '23000') {
         $errores['cedula'] = 'Ya existe un colaborador con esa cédula.';
-        $colaboradores = $this->listar();
-        require BASE_PATH . '/views/colaboradores/index.php';
+        $this->renderConError($errores, $valores);
         return;
       }
       throw $e;
@@ -81,15 +72,8 @@ class ColaboradorController
   public function editar(): void
   {
     SessionHelper::requerir();
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      header('Location: /colaborador');
-      exit;
-    }
-
-    if (!SessionHelper::verificarCsrf($_POST['csrf_token'] ?? '')) {
-      header('Location: /colaborador');
-      exit;
-    }
+    SessionHelper::exigirPost('/colaborador');
+    SessionHelper::exigirCsrf('/colaborador');
 
     $id = (int) ($_POST['id'] ?? 0);
     if ($id <= 0) {
@@ -116,11 +100,7 @@ class ColaboradorController
     $errores = $this->validar($valores);
 
     if (!empty($errores)) {
-      $colaboradores = $this->listar();
-      $editarError = $errores;
-      $editarId = $id;
-      $editarValores = $valores;
-      require BASE_PATH . '/views/colaboradores/index.php';
+      $this->renderConError($errores, $valores, $id);
       return;
     }
 
@@ -139,11 +119,7 @@ class ColaboradorController
     } catch (PDOException $e) {
       if ($e->getCode() === '23000') {
         $errores['cedula'] = 'Ya existe un colaborador con esa cédula.';
-        $colaboradores = $this->listar();
-        $editarError = $errores;
-        $editarId = $id;
-        $editarValores = $valores;
-        require BASE_PATH . '/views/colaboradores/index.php';
+        $this->renderConError($errores, $valores, $id);
         return;
       }
       throw $e;
@@ -156,15 +132,8 @@ class ColaboradorController
   public function eliminar(): void
   {
     SessionHelper::requerir();
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      header('Location: /colaborador');
-      exit;
-    }
-
-    if (!SessionHelper::verificarCsrf($_POST['csrf_token'] ?? '')) {
-      header('Location: /colaborador');
-      exit;
-    }
+    SessionHelper::exigirPost('/colaborador');
+    SessionHelper::exigirCsrf('/colaborador');
 
     $id = (int) ($_POST['id'] ?? 0);
     if ($id <= 0) {
@@ -219,15 +188,24 @@ class ColaboradorController
     $filas = $this->model->listarTodos();
 
     foreach ($filas as &$fila) {
-      try {
-        $fila['nombre_completo'] = $this->cifrado->descifrar($fila['nombre_completo']);
-        $fila['cedula']          = $this->cifrado->descifrar($fila['cedula']);
-      } catch (RuntimeException) {
-        $fila['nombre_completo'] = '[error]';
-        $fila['cedula']          = '[error]';
-      }
+      $fila['nombre_completo'] = $this->cifrado->descifrarConFallback($fila['nombre_completo']);
+      $fila['cedula']          = $this->cifrado->descifrarConFallback($fila['cedula']);
     }
 
     return $filas;
+  }
+
+  /**
+   * Re-renderiza el listado con errores de formulario. Si $editarId se indica,
+   * también abre el modal de edición con esos errores (ver _modal_editar.php).
+   */
+  private function renderConError(array $errores, array $valores, ?int $editarId = null): void
+  {
+    $colaboradores = $this->listar();
+    if ($editarId !== null) {
+      $editarError = $errores;
+      $editarValores = $valores;
+    }
+    require BASE_PATH . '/views/colaboradores/index.php';
   }
 }

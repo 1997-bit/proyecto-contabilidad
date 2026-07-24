@@ -6,44 +6,110 @@ $pageTitle = 'Nueva Planilla';
 require BASE_PATH . '/views/partials/layout_head.php';
 ?>
 <style>
-fieldset { margin-bottom: 14px; padding: 10px 14px; }
-legend { font-weight: bold; }
-label { display: inline-block; width: 170px; }
-input[type="text"], input[type="number"], select { width: 190px; padding: 2px 4px; margin-bottom: 4px; }
-button { margin: 4px 4px 4px 0; padding: 4px 10px; cursor: pointer; }
-#ingresos-container .ing-row { margin-bottom: 4px; }
-#ingresos-container .ing-row select { width: 130px; }
-#ingresos-container .ing-row input { width: 90px; }
-#colab_selector { width: 340px; }
+#ingresos-container .ing-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+#ingresos-container .ing-row select { width: 200px; }
+#ingresos-container .ing-row input { width: 110px; }
+
+.ing-header {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+.ing-header span {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #1a2f5e;
+}
+.ing-header .col-tipo { width: 200px; }
+.ing-header .col-valor { width: 110px; }
+
+.info-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #a8d5cc;
+    color: #1a2f5e;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: help;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+.info-tooltip .info-tooltip-content {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 22px;
+    z-index: 20;
+    background: #1a2f5e;
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    width: 260px;
+    line-height: 1.6;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.info-tooltip:hover .info-tooltip-content,
+.info-tooltip:focus .info-tooltip-content {
+    display: block;
+}
 </style>
 
-    <input type="hidden" name="anio" value="<?= $anio ?>">
-<form method="GET" action="<?= BASE_URL ?>/planilla" style="margin-bottom:12px">
-    
+<h2>Planilla</h2>
+
+<?php if (!empty($errores)): ?>
+<div class="error">
+    <?php foreach ($errores as $e): ?>
+    <p><?= Icons::svg('alert-triangle') ?> <?= htmlspecialchars($e) ?></p>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<form method="GET" action="<?= BASE_URL ?>/planilla">
 <fieldset>
         <legend>Periodo activo</legend>
-        <p style="margin:0 0 6px">
-            Empresa: <strong><?= htmlspecialchars($_SESSION['ctx']['empresa']) ?></strong>
-            &nbsp;<a href="<?= BASE_URL ?>/settings" style="font-size:11px">(cambiar)</a>
-        </p>
 
-        <label for="periodo">Quincena:</label>
-        <select id="periodo" name="periodo">
-            <option value="1ra_quincena" <?= $periodo === '1ra_quincena' ? 'selected' : '' ?>>1ra quincena</option>
-            <option value="2da_quincena" <?= $periodo === '2da_quincena' ? 'selected' : '' ?>>2da quincena</option>
-        </select><br>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="periodo">Quincena</label>
+                <select id="periodo" name="periodo">
+                    <option value="1ra_quincena" <?= $periodo === '1ra_quincena' ? 'selected' : '' ?>>1ra quincena</option>
+                    <option value="2da_quincena" <?= $periodo === '2da_quincena' ? 'selected' : '' ?>>2da quincena</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="mes">Mes</label>
+                <select id="mes" name="mes">
+                    <?php foreach (['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] as $i => $nm): ?>
+                    <option value="<?= $i+1 ?>" <?= $mes === $i+1 ? 'selected' : '' ?>><?= $nm ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="anio">Año</label>
+                <input type="number" id="anio" name="anio" min="2000" max="2100" value="<?= $anio ?>" required>
+            </div>
+        </div>
 
-        <label for="mes">Mes:</label>
-        <select id="mes" name="mes">
-            <?php foreach (['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] as $i => $nm): ?>
-            <option value="<?= $i+1 ?>" <?= $mes === $i+1 ? 'selected' : '' ?>><?= $nm ?></option>
-            <?php endforeach; ?>
-        </select><br>
-
-        <label for="anio">Ano:</label>
-        <input type="number" id="anio" name="anio" min="2000" max="2100" value="<?= $anio ?>" required><br>
-
-        <button type="submit">Ver periodo</button>
+        <div class="form-actions">
+            <button type="submit"><?= Icons::svg('search') ?> Ver periodo</button>
+        </div>
     </fieldset>
 </form>
 <form method="POST" action="<?= BASE_URL ?>/planilla/agregar">
@@ -53,21 +119,25 @@ button { margin: 4px 4px 4px 0; padding: 4px 10px; cursor: pointer; }
     <?php if (!empty($colaboradores)): ?>
     <fieldset>
         <legend>Colaborador</legend>
-        <label for="colab_selector">Seleccionar existente:</label>
-        <select id="colab_selector">
-            <option value="">-- nuevo / manual --</option>
-            <?php foreach ($colaboradores as $c): ?>
-            <option value="<?= $c['id'] ?>"
-                data-nombre="<?= htmlspecialchars($c['nombre_completo']) ?>"
-                data-cedula="<?= htmlspecialchars($c['cedula']) ?>"
-                data-cargo="<?= htmlspecialchars($c['cargo']) ?>"
-                data-estado="<?= htmlspecialchars($c['estado_civil']) ?>"
-                data-salario="<?= $c['salario_base'] ?>"
-                data-anio="<?= $c['anio_inicio'] ?>">
-                <?= htmlspecialchars($c['nombre_completo']) ?> | <?= htmlspecialchars($c['cedula']) ?>
-            </option>
-            <?php endforeach; ?>
-        </select>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="colab_selector">Seleccionar existente</label>
+                <select id="colab_selector">
+                    <option value="">-- nuevo / manual --</option>
+                    <?php foreach ($colaboradores as $c): ?>
+                    <option value="<?= $c['id'] ?>"
+                        data-nombre="<?= htmlspecialchars($c['nombre_completo']) ?>"
+                        data-cedula="<?= htmlspecialchars($c['cedula']) ?>"
+                        data-cargo="<?= htmlspecialchars($c['cargo']) ?>"
+                        data-estado="<?= htmlspecialchars($c['estado_civil']) ?>"
+                        data-salario="<?= $c['salario_base'] ?>"
+                        data-anio="<?= $c['anio_inicio'] ?>">
+                        <?= htmlspecialchars($c['nombre_completo']) ?> | <?= htmlspecialchars($c['cedula']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
         <input type="hidden" id="colaborador_id" name="colaborador_id" value="">
     </fieldset>
     <?php endif; ?>
@@ -75,44 +145,73 @@ button { margin: 4px 4px 4px 0; padding: 4px 10px; cursor: pointer; }
     <fieldset>
         <legend>Datos del colaborador</legend>
 
-        <label for="nombre">Nombre completo:</label>
-        <input type="text" id="nombre" name="nombre" required><br>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nombre">Nombre completo</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="cedula">Cédula</label>
+                <input type="text" id="cedula" name="cedula" placeholder="8-888-8888" required>
+            </div>
+        </div>
 
-        <label for="cedula">Cedula:</label>
-        <input type="text" id="cedula" name="cedula" placeholder="8-888-8888" required><br>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cargo">Cargo</label>
+                <input type="text" id="cargo" name="cargo">
+            </div>
+            <div class="form-group">
+                <label for="estado_civil">Estado civil</label>
+                <select id="estado_civil" name="estado_civil">
+                    <option value="soltero">Soltero/a</option>
+                    <option value="casado">Casado/a</option>
+                    <option value="unido">Unido/a</option>
+                </select>
+            </div>
+        </div>
 
-        <label for="cargo">Cargo:</label>
-        <input type="text" id="cargo" name="cargo"><br>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="salario">Salario base (mensual B/.)</label>
+                <input type="number" id="salario" name="salario" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="anio_inicio">Año de inicio</label>
+                <input type="number" id="anio_inicio" name="anio_inicio" min="1900" max="2100" value="<?= date('Y') ?>" required>
+            </div>
+        </div>
 
-        <label for="estado_civil">Estado civil:</label>
-        <select id="estado_civil" name="estado_civil">
-            <option value="soltero">Soltero/a</option>
-            <option value="casado">Casado/a</option>
-            <option value="unido">Unido/a</option>
-        </select><br>
-
-        <label for="salario">Salario base (mensual B/.):</label>
-        <input type="number" id="salario" name="salario" step="0.01" min="0.01" required><br>
-
-        <label for="anio_inicio">Ano de inicio:</label>
-        <input type="number" id="anio_inicio" name="anio_inicio" min="1900" max="2100" value="<?= date('Y') ?>" required><br>
-
-        <label for="otros_descuentos">Otros descuentos (B/.):</label>
-        <input type="number" id="otros_descuentos" name="otros_descuentos" step="0.01" min="0" value="0">
-        <small>(muebleria, adelantos, ahorros)</small>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="otros_descuentos">Otros descuentos (B/.)</label>
+                <input type="number" id="otros_descuentos" name="otros_descuentos" step="0.01" min="0" value="0">
+                <small>(mueblería, adelantos, ahorros)</small>
+            </div>
+        </div>
     </fieldset>
 
     <fieldset>
-        <legend>Otros ingresos del periodo</legend>
-        <small>
-            <strong>bonificacion</strong>: gravable 100% &nbsp;|&nbsp;
-            <strong>comision</strong>: 100% gravable &nbsp;|&nbsp;
-            <strong>dietas</strong>: exento hasta 25% sal. mensual &nbsp;|&nbsp;
-            <strong>prima</strong>: exento hasta 50% &nbsp;|&nbsp;
-            <strong>horas_extra</strong>: ingresar cantidad de horas
-        </small>
+        <legend>
+            Otros ingresos del periodo
+            <span class="info-tooltip" tabindex="0">?
+                <span class="info-tooltip-content">
+                    <strong>Bonificación</strong>: gravable 100%<br>
+                    <strong>Comisión</strong>: gravable 100%<br>
+                    <strong>Dietas</strong>: exento hasta 25% del salario mensual<br>
+                    <strong>Prima</strong>: exento hasta 50% del salario mensual<br>
+                    <strong>Horas extra diurna</strong>: recargo 1.25x<br>
+                    <strong>Horas extra nocturna</strong>: recargo 1.50x<br>
+                    <strong>Horas extra dominical/feriado</strong>: recargo 1.75x
+                </span>
+            </span>
+        </legend>
 
-        <div id="ingresos-container" style="margin-top:6px">
+        <div class="ing-header">
+            <span class="col-tipo">Tipo</span>
+            <span class="col-valor">Monto / Horas</span>
+        </div>
+        <div id="ingresos-container">
             <div class="ing-row">
                 <select name="ing_tipo[]" onchange="toggleHoras(this)">
                     <option value="">-- ninguno --</option>
@@ -120,31 +219,36 @@ button { margin: 4px 4px 4px 0; padding: 4px 10px; cursor: pointer; }
                     <option value="comision">comision</option>
                     <option value="dietas">dietas</option>
                     <option value="prima">prima</option>
-                    <option value="horas_extra">horas_extra</option>
+                    <option value="horas_extra_diurna">horas extra diurna</option>
+                    <option value="horas_extra_nocturna">horas extra nocturna</option>
+                    <option value="horas_extra_dominical">horas extra dominical/feriado</option>
                 </select>
-                <input type="number" name="ing_monto[]" step="0.01" min="0" placeholder="Monto B/." value="0">
+                <input type="number" name="ing_monto[]" step="0.01" min="0" placeholder="Monto B/." value="0" class="campo-monto">
                 <input type="number" name="ing_horas[]" step="0.01" min="0" placeholder="Horas" value="0" class="campo-horas" style="display:none">
-                <button type="button" onclick="eliminarFilaIng(this)">x</button>
+                <button type="button" class="btn-secondary" onclick="eliminarFilaIng(this)"><?= Icons::svg('x') ?></button>
             </div>
         </div>
-        <button type="button" onclick="agregarFilaIng()">+ Ingreso</button>
+        <button type="button" class="btn-secondary" onclick="agregarFilaIng()"><?= Icons::svg('plus') ?> Ingreso</button>
     </fieldset>
 
-    <button type="submit">Guardar</button>
+    <div class="form-actions">
+        <button type="submit"><?= Icons::svg('save') ?> Guardar</button>
+    </div>
 </form>
 
 
 <?php if (!empty($filas)): ?>
 <h3>
     Planilla: <?= $periodo === '1ra_quincena' ? '1ra Quincena' : '2da Quincena' ?>
-    — <?= $mes ?>/<?= $anio ?>
+    (<?= $mes ?>/<?= $anio ?>)
     &nbsp;<small style="color:#555">(<?= count($filas) ?> colaborador<?= count($filas) !== 1 ? 'es' : '' ?>)</small>
 </h3>
 
 <?php if (!empty($exito)): ?>
-    <p class="ok"><?= htmlspecialchars($exito) ?></p>
+    <p class="ok"><?= Icons::svg('check-circle') ?> <?= htmlspecialchars($exito) ?></p>
 <?php endif; ?>
 
+<div class="table-wrap">
 <table>
     <thead>
         <tr>
@@ -202,9 +306,10 @@ button { margin: 4px 4px 4px 0; padding: 4px 10px; cursor: pointer; }
         </tr>
     </tfoot>
 </table>
+</div>
 
 <?php elseif (!empty($exito)): ?>
-    <p class="ok"><?= htmlspecialchars($exito) ?></p>
+    <p class="ok"><?= Icons::svg('check-circle') ?> <?= htmlspecialchars($exito) ?></p>
 <?php endif; ?>
 <script>
 document.getElementById('colab_selector')?.addEventListener('change', function() {
@@ -240,11 +345,13 @@ function agregarFilaIng() {
   <option value="comision">comision</option>
   <option value="dietas">dietas</option>
   <option value="prima">prima</option>
-  <option value="horas_extra">horas_extra</option>
+  <option value="horas_extra_diurna">horas extra diurna</option>
+  <option value="horas_extra_nocturna">horas extra nocturna</option>
+  <option value="horas_extra_dominical">horas extra dominical/feriado</option>
   </select>
-  <input type="number" name="ing_monto[]" step="0.01" min="0" placeholder="Monto B/." value="0">
+  <input type="number" name="ing_monto[]" step="0.01" min="0" placeholder="Monto B/." value="0" class="campo-monto">
   <input type="number" name="ing_horas[]" step="0.01" min="0" placeholder="Horas" value="0" class="campo-horas" style="display:none">
-  <button type="button" onclick="eliminarFilaIng(this)">x</button>
+  <button type="button" class="btn-secondary" onclick="eliminarFilaIng(this)"><?= Icons::svg('x') ?></button>
 `;
 c.appendChild(div);
 }
@@ -255,8 +362,11 @@ function eliminarFilaIng(btn) {
 }
 
 function toggleHoras(sel) {
+  const esHorasExtra = sel.value.startsWith('horas_extra_');
   const horas = sel.parentElement.querySelector('.campo-horas');
-  horas.style.display = sel.value === 'horas_extra' ? 'inline' : 'none';
+  const monto = sel.parentElement.querySelector('.campo-monto');
+  horas.style.display = esHorasExtra ? 'inline' : 'none';
+  monto.style.display = esHorasExtra ? 'none' : 'inline';
 }
 </script>
 

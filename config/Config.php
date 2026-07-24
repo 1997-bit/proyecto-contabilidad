@@ -1,5 +1,5 @@
 <?php
-define('BASE_URL', 'http://localhost/proyecto-contabilidad/public');
+define('BASE_URL', 'http://prospera.local');
 class Config
 {
   public static function cargarEnv(string $path): void
@@ -38,7 +38,7 @@ class Config
   public const RECARGO_DOMINICAL = 1.75;
   public const MAX_OTROS_DESC_PCT = 0.35;
   public const MIN_NETO_PCT = 0.50;
-  // CSS patrono — períodos vigentes
+  // CSS patrono: períodos vigentes
   public const CSS_PATRONO = 0.1325; // 2025-2026
   public const SEG_EDUCATIVO_PAT = 0.015;
 

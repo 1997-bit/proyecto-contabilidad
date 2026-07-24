@@ -224,23 +224,59 @@ class PlanillaServiceTest extends TestCase
 
   // Horas extra
 
-  public function test_horas_extra_monto_directo_entra_al_bruto(): void
+  private function esperadoHorasExtra(float $horas, float $valorHora, float $recargo): float
   {
-    $base = $this->calcular(1000.00);
-    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra', 'monto' => 120.00, 'horas' => 8]]);
-    $this->assertEquals($base['salario_bruto'] + 120.00, $r['salario_bruto']);
+    return round($horas * $valorHora * $recargo, 2);
   }
 
-  public function test_horas_extra_cero_monto_no_afecta_bruto(): void
+  public function test_horas_extra_diurna_usa_recargo_125(): void
   {
     $base = $this->calcular(1000.00);
-    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra', 'monto' => 0.00, 'horas' => 10]]);
+    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra_diurna', 'horas' => 8]]);
+    $esperado = $this->esperadoHorasExtra(8, $base['valor_hora'], Config::RECARGO_DIURNO);
+    $this->assertEquals($base['salario_bruto'] + $esperado, $r['salario_bruto']);
+  }
+
+  public function test_horas_extra_nocturna_usa_recargo_150(): void
+  {
+    $base = $this->calcular(1000.00);
+    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra_nocturna', 'horas' => 8]]);
+    $esperado = $this->esperadoHorasExtra(8, $base['valor_hora'], Config::RECARGO_NOCTURNO);
+    $this->assertEquals($base['salario_bruto'] + $esperado, $r['salario_bruto']);
+  }
+
+  public function test_horas_extra_dominical_usa_recargo_175(): void
+  {
+    $base = $this->calcular(1000.00);
+    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra_dominical', 'horas' => 8]]);
+    $esperado = $this->esperadoHorasExtra(8, $base['valor_hora'], Config::RECARGO_DOMINICAL);
+    $this->assertEquals($base['salario_bruto'] + $esperado, $r['salario_bruto']);
+  }
+
+  public function test_horas_extra_nocturna_paga_mas_que_diurna_a_igual_horas(): void
+  {
+    $diurna = $this->calcular(1000.00, [['tipo' => 'horas_extra_diurna', 'horas' => 10]]);
+    $nocturna = $this->calcular(1000.00, [['tipo' => 'horas_extra_nocturna', 'horas' => 10]]);
+    $this->assertGreaterThan($diurna['otros_ingresos'], $nocturna['otros_ingresos']);
+  }
+
+  public function test_horas_extra_dominical_paga_mas_que_nocturna_a_igual_horas(): void
+  {
+    $nocturna = $this->calcular(1000.00, [['tipo' => 'horas_extra_nocturna', 'horas' => 10]]);
+    $dominical = $this->calcular(1000.00, [['tipo' => 'horas_extra_dominical', 'horas' => 10]]);
+    $this->assertGreaterThan($nocturna['otros_ingresos'], $dominical['otros_ingresos']);
+  }
+
+  public function test_horas_extra_cero_horas_no_afecta_bruto(): void
+  {
+    $base = $this->calcular(1000.00);
+    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra_diurna', 'horas' => 0]]);
     $this->assertEquals($base['salario_bruto'], $r['salario_bruto']);
   }
 
   public function test_horas_extra_no_genera_exentos(): void
   {
-    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra', 'monto' => 100.00, 'horas' => 5]]);
+    $r = $this->calcular(1000.00, [['tipo' => 'horas_extra_diurna', 'horas' => 5]]);
     $this->assertEquals(0.00, $r['otros_ingresos_sin_descuento']);
   }
 
@@ -281,11 +317,11 @@ class PlanillaServiceTest extends TestCase
         [
           ['tipo' => 'bonificacion', 'monto' => 100.00],
           ['tipo' => 'comision', 'monto' => 100.00],
-          ['tipo' => 'horas_extra', 'monto' => 50.00, 'horas' => 4],
+          ['tipo' => 'horas_extra_diurna', 'horas' => 4], // 4h * valorHora(4.8077) * 1.25 = 24.04
           ['tipo' => 'dietas', 'monto' => 50.00],
           ['tipo' => 'prima', 'monto' => 100.00],
         ],
-        250.00,
+        224.04,
         150.00,
       ],
     ];

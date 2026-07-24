@@ -24,12 +24,14 @@ class PlanillaController
   public function index(): void
   {
     SessionHelper::requerir();
-    if (empty($_SESSION['ctx']['empresa_id'])) {
+
+    $empresas = $this->planillaModel->listarEmpresas();
+    $empresaId = (int) ($_SESSION['ctx']['empresa_id'] ?? 0);
+    if (!SessionHelper::empresaIdValida($empresaId, $empresas)) {
       header('Location: ' . BASE_URL . '/settings');
       exit;
     }
 
-    $empresaId = (int) $_SESSION['ctx']['empresa_id'];
     $periodo = $_GET['periodo'] ?? '1ra_quincena';
     $mes = (int) ($_GET['mes'] ?? (int) date('n'));
     $anio = (int) ($_GET['anio'] ?? (int) date('Y'));
@@ -39,16 +41,10 @@ class PlanillaController
     $csrf = SessionHelper::generarCsrf();
 
     $rawColabs = $this->planillaModel->listarColaboradoresActivos($empresaId);
-    $cifrado = new CifradoService();
     $colaboradores = [];
     foreach ($rawColabs as $c) {
-      try {
-        $c['nombre_completo'] = $cifrado->descifrar($c['nombre_completo']);
-        $c['cedula'] = $cifrado->descifrar($c['cedula']);
-      } catch (RuntimeException) {
-        $c['nombre_completo'] = '[error]';
-        $c['cedula'] = '[error]';
-      }
+      $c['nombre_completo'] = $this->cifrado->descifrarConFallback($c['nombre_completo']);
+      $c['cedula'] = $this->cifrado->descifrarConFallback($c['cedula']);
       $colaboradores[] = $c;
     }
 
@@ -59,13 +55,8 @@ class PlanillaController
     if ($planillaRow) {
       $rawFilas = $this->planillaModel->listarDetallePlanilla((int) $planillaRow['id']);
       foreach ($rawFilas as $f) {
-        try {
-          $nombre = $cifrado->descifrar($f['nombre_completo'] ?? '');
-          $cedula = $cifrado->descifrar($f['cedula'] ?? '');
-        } catch (RuntimeException) {
-          $nombre = '[error]';
-          $cedula = '[error]';
-        }
+        $nombre = $this->cifrado->descifrarConFallback($f['nombre_completo'] ?? '');
+        $cedula = $this->cifrado->descifrarConFallback($f['cedula'] ?? '');
         $filas[] = [
           'nombre' => $nombre,
           'cedula' => $cedula,
@@ -95,11 +86,7 @@ class PlanillaController
 
   public function agregar(): void
   {
-
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
-      header('Location: ' . BASE_URL . '/planilla?' . $qs); exit;
-    }
+    SessionHelper::exigirPost(BASE_URL . '/planilla');
 
     if (!SessionHelper::verificarCsrf($_POST['csrf_token'] ?? '')) {
       http_response_code(403);
@@ -120,27 +107,14 @@ class PlanillaController
     $mes = (int) ($_POST['mes'] ?? (int) date('n'));
     $anio = (int) ($_POST['anio'] ?? (int) date('Y'));
 
-    $ingresos = [];
-    foreach ($_POST['ing_tipo'] ?? [] as $i => $tipo) {
-      if (empty($tipo)) continue;
-      $entry = ['tipo' => $tipo, 'monto' => (float) ($_POST['ing_monto'][$i] ?? 0)];
-      if ($tipo === 'horas_extra') $entry['horas'] = (float) ($_POST['ing_horas'][$i] ?? 0);
-      $ingresos[] = $entry;
-    }
-
-    $errores = [];
-    if ($nombre === '') $errores[] = 'El nombre es requerido.';
-    if ($cedula === '') $errores[] = 'La cédula es requerida.';
-    if ($salario <= 0) $errores[] = 'El salario base debe ser mayor a 0.';
     if ($empresaId <= 0) {
       SessionHelper::flash('planilla_errores', ['Sin empresa activa. Configure en Settings.']);
       header('Location: ' . BASE_URL . '/settings');
       exit;
     }
-    if (!in_array($estadoCivil, ['soltero','casado','unido'], true)) $errores[] = 'Estado civil inválido.';
-    if (!in_array($periodo, ['1ra_quincena','2da_quincena'], true))  $errores[] = 'Período inválido.';
-    if ($mes < 1 || $mes > 12) $errores[] = 'Mes inválido.';
-    if ($anio < 2000 || $anio > 2100) $errores[] = 'Año inválido.';
+
+    $ingresos = $this->parseIngresosPost();
+    $errores = $this->validarNuevoDetalle($nombre, $cedula, $salario, $estadoCivil, $periodo, $mes, $anio);
 
     if (!empty($errores)) {
       SessionHelper::flash('planilla_errores', $errores);
@@ -160,11 +134,69 @@ class PlanillaController
       'semanas_mes' => (float) $empresa['semanas_mes'],
     ], ['ingresos' => $ingresos, 'otros_descuentos' => $otrosDesc]);
 
+    $this->persistirDetalle($empresaId, $periodo, $mes, $anio, [
+      'nombre' => $nombre,
+      'cedula' => $cedula,
+      'cargo' => $cargo,
+      'salario' => $salario,
+      'estado_civil' => $estadoCivil,
+      'anio_inicio' => $anioInicio,
+    ], $calc);
+
+    $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
+    header('Location: ' . BASE_URL . '/planilla?' . $qs);
+    exit;
+  }
+
+  private function parseIngresosPost(): array
+  {
+    $tiposHorasExtra = ['horas_extra_diurna', 'horas_extra_nocturna', 'horas_extra_dominical'];
+
+    $ingresos = [];
+    foreach ($_POST['ing_tipo'] ?? [] as $i => $tipo) {
+      if (empty($tipo)) continue;
+      $entry = ['tipo' => $tipo];
+      if (in_array($tipo, $tiposHorasExtra, true)) {
+        $entry['horas'] = (float) ($_POST['ing_horas'][$i] ?? 0);
+      } else {
+        $entry['monto'] = (float) ($_POST['ing_monto'][$i] ?? 0);
+      }
+      $ingresos[] = $entry;
+    }
+    return $ingresos;
+  }
+
+  private function validarNuevoDetalle(
+    string $nombre,
+    string $cedula,
+    float $salario,
+    string $estadoCivil,
+    string $periodo,
+    int $mes,
+    int $anio
+  ): array {
+    $errores = [];
+    if ($nombre === '') $errores[] = 'El nombre es requerido.';
+    if ($cedula === '') $errores[] = 'La cédula es requerida.';
+    if ($salario <= 0) $errores[] = 'El salario base debe ser mayor a 0.';
+    if (!in_array($estadoCivil, ['soltero','casado','unido'], true)) $errores[] = 'Estado civil inválido.';
+    if (!in_array($periodo, ['1ra_quincena','2da_quincena'], true))  $errores[] = 'Período inválido.';
+    if ($mes < 1 || $mes > 12) $errores[] = 'Mes inválido.';
+    if ($anio < 2000 || $anio > 2100) $errores[] = 'Año inválido.';
+    return $errores;
+  }
+
+  /**
+   * Busca o crea el colaborador y la planilla, e inserta el detalle dentro de una transacción.
+   * En éxito o en error deja un flash y retorna; el caller es quien redirige.
+   */
+  private function persistirDetalle(int $empresaId, string $periodo, int $mes, int $anio, array $d, array $calc): void
+  {
     try {
       $pdo = Conexion::conectar();
       $pdo->beginTransaction();
 
-      $cedulaHash = CifradoService::hash($cedula);
+      $cedulaHash = CifradoService::hash($d['cedula']);
       $colab = $this->planillaModel->buscarColaboradorPorCedulaHash($cedulaHash);
 
       if ($colab) {
@@ -172,14 +204,14 @@ class PlanillaController
       } else {
         $colaboradorId = $this->planillaModel->insertarColaborador([
           ':empresa_id' => $empresaId,
-          ':nombre_completo' => $this->cifrado->cifrar($nombre),
-          ':nombre_hash' => CifradoService::hash($nombre),
-          ':cedula' => $this->cifrado->cifrar($cedula),
+          ':nombre_completo' => $this->cifrado->cifrar($d['nombre']),
+          ':nombre_hash' => CifradoService::hash($d['nombre']),
+          ':cedula' => $this->cifrado->cifrar($d['cedula']),
           ':cedula_hash' => $cedulaHash,
-          ':estado_civil' => $estadoCivil,
-          ':cargo' => $cargo,
-          ':salario_base' => $salario,
-          ':anio_inicio' => $anioInicio,
+          ':estado_civil' => $d['estado_civil'],
+          ':cargo' => $d['cargo'],
+          ':salario_base' => $d['salario'],
+          ':anio_inicio' => $d['anio_inicio'],
         ]);
       }
 
@@ -197,50 +229,12 @@ class PlanillaController
       $this->planillaModel->insertarDetalle($planillaId, $colaboradorId, $calc, $_SESSION['usuario_id'] ?? null);
       $pdo->commit();
 
-      SessionHelper::flash('planilla_exito', "Guardado — Planilla #{$planillaId} · Colaborador #{$colaboradorId}");
+      SessionHelper::flash('planilla_exito', "Guardado. Planilla #{$planillaId}, colaborador #{$colaboradorId}");
 
     } catch (\Throwable $e) {
       if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
       SessionHelper::flash('planilla_errores', ['Error BD: ' . $e->getMessage()]);
     }
-
-    $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
-    header('Location: ' . BASE_URL . '/planilla?' . $qs);
-    exit;
-  }
-  public function eliminar(): void
-  {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      header('Location: ' . BASE_URL . '/planilla');
-      exit;
-    }
-
-    SessionHelper::iniciar();
-    $idx = (int) ($_POST['idx'] ?? -1);
-
-    if (isset($_SESSION['planilla_prueba'][$idx])) {
-      array_splice($_SESSION['planilla_prueba'], $idx, 1);
-    }
-
-    header('Location: ' . BASE_URL . '/planilla');
-    exit;
-  }
-
-  public function limpiar(): void
-  {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      header('Location: ' . BASE_URL . '/planilla');
-      exit;
-    }
-
-    SessionHelper::iniciar();
-    unset($_SESSION['planilla_prueba']);
-
-    $periodo = $_POST['periodo'] ?? '1ra_quincena';
-    $mes = (int) ($_POST['mes']  ?? (int) date('n'));
-    $anio = (int) ($_POST['anio'] ?? (int) date('Y'));
-    $qs = http_build_query(['periodo' => $periodo, 'mes' => $mes, 'anio' => $anio]);
-    header('Location: ' . BASE_URL . '/planilla?' . $qs);    exit;
   }
 
   //Helpers privados
@@ -262,21 +256,6 @@ class PlanillaController
     }
     return $t;
   }
-  public function test(): void
-  {
-    SessionHelper::iniciar();
-
-    $filas = $_SESSION['planilla_prueba'] ?? [];
-    $totales = $this->calcularTotales($filas);
-    $errores = SessionHelper::getFlash('planilla_errores', []);
-    $exito   = SessionHelper::getFlash('planilla_exito', '');
-
-    $empresas = $this->planillaModel->listarEmpresas();
-    $csrf = SessionHelper::generarCsrf();
-
-    require BASE_PATH . '/views/planilla/test.php';
-  }
-
   public function lista(): void
   {
     SessionHelper::requerir();

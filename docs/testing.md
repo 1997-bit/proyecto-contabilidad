@@ -106,7 +106,7 @@ Tres reglas obligatorias:
 - La clase extiende `TestCase`
 - Cada método de prueba empieza con `test_`
 
-PHPUnit detecta todo automáticamente — no hay que registrar nada.
+PHPUnit detecta todo automáticamente. No hay que registrar nada.
 
 ### 3. Registrar la clase en bootstrap.php
 
