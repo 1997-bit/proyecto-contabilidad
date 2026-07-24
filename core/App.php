@@ -33,7 +33,6 @@ class App
   private static function definirRutas(): void
   {
     define('BASE_PATH', realpath(__DIR__ . '/..'));
-    define('BASE_URL',  '');
   }
 
   private static function cargarNucleo(): void

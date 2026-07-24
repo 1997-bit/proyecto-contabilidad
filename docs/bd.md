@@ -114,9 +114,9 @@ borrador --> aprobada --> pagada
 | `horas_extras`          | `DECIMAL(5,2)`       | Cantidad de horas                     |
 | `monto_horas_extras`    | `DECIMAL(10,2)`      |                                       |
 | `bonificacion`          | `DECIMAL(10,2)`      | 10% salario mensual en junio          |
-| `comision`              | `DECIMAL(10,2)`      | 2% ventas — solo `comisiones`         |
-| `dietas`                | `DECIMAL(10,2)`      | Monto bruto — solo `dietas`           |
-| `prima_produccion`      | `DECIMAL(10,2)`      | Monto bruto — solo `prima_produccion` |
+| `comision`              | `DECIMAL(10,2)`      | 2% ventas, solo `comisiones`          |
+| `dietas`                | `DECIMAL(10,2)`      | Monto bruto, solo `dietas`            |
+| `prima_produccion`      | `DECIMAL(10,2)`      | Monto bruto, solo `prima_produccion`  |
 | `salario_bruto`         | `DECIMAL(10,2)`      | Total ingresos gravables              |
 
 #### Deducciones
@@ -159,7 +159,7 @@ Registra todas las acciones del sistema para cumplimiento ISO 27001 A.12.4.
 | `ip_address`    | `VARCHAR(45)`           | IPv4 o IPv6                                                       |
 | `datos_antes`   | `JSON`                  | Estado anterior (UPDATE/DELETE)                                   |
 | `datos_despues` | `JSON`                  | Estado nuevo (INSERT/UPDATE)                                      |
-| `descripcion`   | `VARCHAR(500)`          | Detalle libre — ej: motivo de anulación                           |
+| `descripcion`   | `VARCHAR(500)`          | Detalle libre, ej. motivo de anulación                            |
 | `created_at`    | `DATETIME`              | Default `CURRENT_TIMESTAMP`                                       |
 
 **Índices:** `PRIMARY` · `INDEX idx_tabla_registro (tabla, registro_id)` · `INDEX idx_usuario_id` · `INDEX idx_accion` · `INDEX idx_created_at`
